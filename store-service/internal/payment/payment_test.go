@@ -77,6 +77,9 @@ func Test_ConfirmPayment_Input_OrderNumber_2603159522001_Should_Be_Return_Tracki
 
 	mockOrderRepository.On("UpdateOrderTransaction", mock.Anything, oid, "TRANSACTION_ID").Return(nil)
 
+	mockPointService := new(mockPointService)
+	mockPointService.On("EarnPoint", mock.Anything, uid, orgID, oid, 90.00).Return(nil)
+
 	mockShippingGateway := new(mockShippingGateway)
 	mockShippingGateway.On("GetTrackingNumber", mock.Anything, shipping.ShippingGatewaySubmit{
 		ShippingMethodID: shippingMethodID,
@@ -88,6 +91,7 @@ func Test_ConfirmPayment_Input_OrderNumber_2603159522001_Should_Be_Return_Tracki
 		ShippingGateway:   mockShippingGateway,
 		OrderRepository:   mockOrderRepository,
 		ProductRepository: mockProductRepository,
+		PointService:      mockPointService,
 	}
 
 	submitedPayment := payment.SubmitedPayment{
@@ -450,6 +454,86 @@ func Test_ConfirmPayment_Input_OrderNumber_2603159522179_Should_Be_Return_OrderR
 	assert.NotNil(t, err)
 }
 
+func Test_ConfirmPayment_Input_OrderNumber_2603159522277_Should_Be_Return_PointService_EarnPoint_Error(t *testing.T) {
+	expected := payment.SubmitedPaymentResponse{}
+
+	uid := 1
+	oid := 8004359103
+	orgID := 1
+	shippingMethodID := 1
+	paymentMethodID := 1
+	var orderNumber int64 = 2603159522001277
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{
+		ID:               oid,
+		OrderNumber:      orderNumber,
+		UserID:           uid,
+		ShippingMethodID: shippingMethodID,
+		PaymentMethodID:  paymentMethodID,
+		BurnPoint:        0,
+		SubTotalPrice:    100.00,
+		DiscountPrice:    10.00,
+		TotalPrice:       90.00,
+		TransactionID:    "",
+		Status:           "created",
+	}, nil)
+
+	mockBankGateway := new(mockBankGateway)
+	mockBankGateway.On("GetCardDetail", mock.Anything, orgID, uid).Return(payment.CardDetail{
+		CardNumber:   "4719700591590995",
+		CVV:          752,
+		ExpiredMonth: 12,
+		ExpiredYear:  27,
+		CardName:     "SCK ShuHaRi",
+	}, nil)
+
+	paymentDetail := payment.PaymentDetail{
+		CardNumber:   "4719700591590995",
+		CVV:          752,
+		ExpiredMonth: 12,
+		ExpiredYear:  27,
+		CardName:     "SCK ShuHaRi",
+		Amount:       90.00,
+		Currency:     "USD",
+		MerchantID:   1,
+	}
+	mockBankGateway.On("Payment", mock.Anything, paymentDetail).Return("TRANSACTION_ID", nil)
+
+	mockOrderRepository.On("GetOrderProduct", mock.Anything, oid).Return([]order.OrderProduct{
+		{
+			ProductID: 2,
+			Quantity:  2,
+		},
+	}, nil)
+
+	mockProductRepository := new(mockProductRepository)
+	mockProductRepository.On("UpdateStock", mock.Anything, 2, 2).Return(nil)
+
+	mockOrderRepository.On("UpdateOrderTransaction", mock.Anything, oid, "TRANSACTION_ID").Return(nil)
+
+	mockPointService := new(mockPointService)
+	mockPointService.On("EarnPoint", mock.Anything, uid, orgID, oid, 90.00).Return(errors.New("EarnPoint Error"))
+
+	paymentService := payment.PaymentService{
+		BankGateway:       mockBankGateway,
+		OrderRepository:   mockOrderRepository,
+		ProductRepository: mockProductRepository,
+		PointService:      mockPointService,
+	}
+
+	submitedPayment := payment.SubmitedPayment{
+		OrderNumber: orderNumber,
+		OTP:         123456,
+		RefOTP:      "REF_OTP",
+	}
+
+	actual, err := paymentService.ConfirmPayment(context.Background(), uid, submitedPayment)
+
+	assert.Equal(t, expected, actual)
+	assert.NotNil(t, err)
+}
+
 func Test_ConfirmPayment_Input_OrderNumber_2603159533899_Should_Be_Return_ShippingGateway_GetTrackingNumber_Error(t *testing.T) {
 	expected := payment.SubmitedPaymentResponse{}
 
@@ -508,6 +592,9 @@ func Test_ConfirmPayment_Input_OrderNumber_2603159533899_Should_Be_Return_Shippi
 
 	mockOrderRepository.On("UpdateOrderTransaction", mock.Anything, oid, "TRANSACTION_ID").Return(nil)
 
+	mockPointService := new(mockPointService)
+	mockPointService.On("EarnPoint", mock.Anything, uid, orgID, oid, 90.00).Return(nil)
+
 	mockShippingGateway := new(mockShippingGateway)
 	mockShippingGateway.On("GetTrackingNumber", mock.Anything, shipping.ShippingGatewaySubmit{
 		ShippingMethodID: shippingMethodID,
@@ -518,6 +605,7 @@ func Test_ConfirmPayment_Input_OrderNumber_2603159533899_Should_Be_Return_Shippi
 		ShippingGateway:   mockShippingGateway,
 		OrderRepository:   mockOrderRepository,
 		ProductRepository: mockProductRepository,
+		PointService:      mockPointService,
 	}
 
 	submitedPayment := payment.SubmitedPayment{

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"store-service/internal/metrics"
 	"store-service/internal/order"
+	"store-service/internal/point"
 	"store-service/internal/product"
 	"store-service/internal/shipping"
 	"time"
@@ -23,6 +24,7 @@ type PaymentService struct {
 	ShippingGateway   ShippingGatewayInterface
 	OrderRepository   order.OrderRepository
 	ProductRepository product.ProductRepository
+	PointService      point.PointInterface
 }
 
 type BankGatewayInterface interface {
@@ -133,6 +135,15 @@ func (service PaymentService) ConfirmPayment(ctx context.Context, uid int, submi
 		slog.Any("after", map[string]any{"transaction_id": transactionId, "status": "paid"}),
 		slog.Any("changed_fields", []string{"transaction_id", "status"}),
 	)
+
+	netAmountThb := orderDetail.SubTotalPrice - orderDetail.DiscountPrice
+	err = service.PointService.EarnPoint(ctx, uid, orgID, orderDetail.ID, netAmountThb)
+	if err != nil {
+		slog.ErrorContext(ctx, "PointService.EarnPoint failed",
+			"log_type", "error", "error_code", "POINT_EARN_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber, "amount_thb", netAmountThb)
+		return SubmitedPaymentResponse{}, err
+	}
 
 	shippingGatewaySubmit := shipping.ShippingGatewaySubmit{
 		ShippingMethodID: orderDetail.ShippingMethodID,

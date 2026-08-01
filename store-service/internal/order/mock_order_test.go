@@ -22,14 +22,24 @@ func (service *mockPointInterface) TotalPoint(ctx context.Context, uid int) (poi
 	return argument.Get(0).(point.TotalPoint), argument.Error(1)
 }
 
-func (service *mockPointInterface) DeductPoint(ctx context.Context, uid int, submitedPoint point.SubmitedPoint) (point.TotalPoint, error) {
-	argument := service.Called(ctx, uid, submitedPoint)
-	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+func (service *mockPointInterface) RedeemPoint(ctx context.Context, uid int, orgID int, orderID int, points int) error {
+	argument := service.Called(ctx, uid, orgID, orderID, points)
+	return argument.Error(0)
 }
 
 func (service *mockPointInterface) CheckBurnPoint(ctx context.Context, uid int, amount int) (bool, error) {
 	argument := service.Called(ctx, uid, amount)
 	return argument.Bool(0), argument.Error(1)
+}
+
+func (service *mockPointInterface) EarnPoint(ctx context.Context, uid int, orgID int, orderID int, amountThb float64) error {
+	argument := service.Called(ctx, uid, orgID, orderID, amountThb)
+	return argument.Error(0)
+}
+
+func (service *mockPointInterface) ApproveEarnPoint(ctx context.Context, uid int, orgID int, orderID int) error {
+	argument := service.Called(ctx, uid, orgID, orderID)
+	return argument.Error(0)
 }
 
 type mockOrderHelper struct {
@@ -85,6 +95,11 @@ func (repo *mockOrderRepository) CreateShipping(ctx context.Context, userID int,
 	return argument.Int(0), argument.Error(1)
 }
 
+func (repo *mockOrderRepository) ListOrdersByUserID(ctx context.Context, userID int) ([]order.OrderHistoryItem, error) {
+	argument := repo.Called(ctx, userID)
+	return argument.Get(0).([]order.OrderHistoryItem), argument.Error(1)
+}
+
 func (repo *mockOrderRepository) UpdateOrderTransaction(ctx context.Context, orderID int, transactionID string) error {
 	argument := repo.Called(ctx, orderID, transactionID)
 	return argument.Error(1)
@@ -93,6 +108,11 @@ func (repo *mockOrderRepository) UpdateOrderTransaction(ctx context.Context, ord
 func (repo *mockOrderRepository) UpdateOrderTrackingNumber(ctx context.Context, orderID int, trackingNumber string) error {
 	argument := repo.Called(ctx, orderID, trackingNumber)
 	return argument.Error(1)
+}
+
+func (repo *mockOrderRepository) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
+	argument := repo.Called(ctx, orderID, status)
+	return argument.Error(0)
 }
 
 type mockProductRepository struct {

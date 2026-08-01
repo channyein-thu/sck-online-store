@@ -8,7 +8,7 @@ type Decimal struct {
 }
 
 func ConvertToThb(amount float64) Decimal {
-	rate := 35.969964
+	rate := 35.969964 // Exchange rate from USD to THB external api
 	result := amount * rate
 	factor2 := math.Pow(10, 2)
 	factor6 := math.Pow(10, 6)

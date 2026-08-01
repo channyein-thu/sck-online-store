@@ -15,17 +15,12 @@ export const subTotal = (priceList: SubTotalType[]): number => {
   return total
 }
 
+// 2 points = 1 THB, so the most points that can ever apply to a given
+// subtotal is subTotal * 2 (any more would be wasted, not just discounted).
 export const pointBurn = (point: number, subTotal: number) => {
-  let pointsUsed = 0
+  const maxRedeemable = Math.floor(subTotal * 2)
 
-  if (point <= subTotal) {
-    pointsUsed = point
-  } else {
-    // ปัดเศษขึ้น
-    pointsUsed = Math.ceil(subTotal)
-  }
-
-  return pointsUsed
+  return Math.min(point, maxRedeemable)
 }
 
 export const totalPayment = (
@@ -37,10 +32,12 @@ export const totalPayment = (
   let totalPayment = 0
 
   if (isUsePoint) {
-    if (subTotal <= pointsUsed) {
+    const discount = Math.floor(pointsUsed / 2)
+
+    if (subTotal <= discount) {
       totalPayment = shippingFee
     } else {
-      totalPayment = subTotal - pointsUsed + shippingFee
+      totalPayment = subTotal - discount + shippingFee
     }
   } else {
     totalPayment = subTotal + shippingFee

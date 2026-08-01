@@ -16,7 +16,22 @@ func (gateway *mockPointGateway) GetPoints(ctx context.Context, userID int) ([]p
 	return argument.Get(0).([]point.Point), argument.Error(1)
 }
 
-func (gateway *mockPointGateway) CreatePoint(ctx context.Context, userID int, pointItem point.Point) (point.Point, error) {
-	argument := gateway.Called(ctx, userID, pointItem)
-	return argument.Get(0).(point.Point), argument.Error(1)
+func (gateway *mockPointGateway) GetBalance(ctx context.Context, orgID int, uid int) (int, error) {
+	argument := gateway.Called(ctx, orgID, uid)
+	return argument.Int(0), argument.Error(1)
+}
+
+func (gateway *mockPointGateway) CreateEarnPoint(ctx context.Context, body point.EarnPointRequest) error {
+	argument := gateway.Called(ctx, body)
+	return argument.Error(0)
+}
+
+func (gateway *mockPointGateway) ApproveEarnPoint(ctx context.Context, body point.ApproveEarnPointRequest) error {
+	argument := gateway.Called(ctx, body)
+	return argument.Error(0)
+}
+
+func (gateway *mockPointGateway) RedeemPoint(ctx context.Context, body point.RedeemPointRequest) error {
+	argument := gateway.Called(ctx, body)
+	return argument.Error(0)
 }

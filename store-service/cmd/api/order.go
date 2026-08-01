@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"store-service/internal/order"
+	"store-service/internal/point"
 
 	"github.com/gin-gonic/gin"
 )
@@ -93,6 +94,132 @@ func (api OrderAPI) SubmitOrderHandler(context *gin.Context) {
 
 	context.JSON(http.StatusOK, OrderConfirmation{
 		OrderNumber: createdOrder.OrderNumber,
+	})
+}
+
+// @Summary Get order history
+// @Description Returns the authenticated user's own orders, newest first
+// @Tags order
+// @Produce json
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Bearer token"
+// @Success 200 {array} order.OrderHistoryItem
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 500
+// @Router /api/v1/order/history [get]
+func (api OrderAPI) GetOrderHistoryHandler(context *gin.Context) {
+	uid := context.GetInt("userID")
+	ctx := context.Request.Context()
+
+	orders, err := api.OrderService.ListOrders(ctx, uid)
+	if err != nil {
+		slog.ErrorContext(ctx, "OrderService.ListOrders failed",
+			"log_type", "error",
+			"error_code", "ORDER_HISTORY_FAILED",
+			"error_message", err.Error(),
+			"user_id", uid,
+		)
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	context.JSON(http.StatusOK, orders)
+}
+
+// @Summary Confirm receipt
+// @Description Confirms the order was received: approves its earned points (starting the 180-day validity window) and marks the order completed
+// @Tags order
+// @Produce json
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Bearer token"
+// @Param id path int true "Order number"
+// @Success 200
+// @Failure 400 {string} string "Bad Request - Invalid order number"
+// @Failure 401 {string} string "Unauthorized"
+// @Failure 403 {object} map[string]string "Forbidden - order does not belong to this user"
+// @Failure 404 {object} map[string]string "Not Found"
+// @Failure 500
+// @Router /api/v1/order/{id}/confirmReceipt [post]
+func (api OrderAPI) ConfirmReceiptHandler(context *gin.Context) {
+	uid := context.GetInt("userID")
+	ctx := context.Request.Context()
+
+	orderNumberStr := context.Param("id")
+	orderNumber, err := strconv.ParseInt(orderNumberStr, 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid order number",
+		})
+		return
+	}
+
+	err = api.OrderService.ConfirmReceipt(ctx, uid, orderNumber)
+	if err != nil {
+		if errors.Is(err, order.ErrOrderNotFound) {
+			slog.ErrorContext(ctx, "OrderService.ConfirmReceipt not found",
+				"log_type", "error",
+				"error_code", "ORDER_NOT_FOUND",
+				"error_message", err.Error(),
+				"user_id", uid,
+				slog.Any("request", map[string]any{"order_number": orderNumber}),
+			)
+			context.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, order.ErrOrderNotOwned) {
+			slog.ErrorContext(ctx, "OrderService.ConfirmReceipt not owned",
+				"log_type", "error",
+				"error_code", "ORDER_NOT_OWNED",
+				"error_message", err.Error(),
+				"user_id", uid,
+				slog.Any("request", map[string]any{"order_number": orderNumber}),
+			)
+			context.JSON(http.StatusForbidden, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, point.ErrNoPendingPoints) {
+			slog.ErrorContext(ctx, "OrderService.ConfirmReceipt no pending points",
+				"log_type", "error",
+				"error_code", "POINT_APPROVE_NOT_FOUND",
+				"error_message", err.Error(),
+				"user_id", uid,
+				slog.Any("request", map[string]any{"order_number": orderNumber}),
+			)
+			context.JSON(http.StatusNotFound, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		slog.ErrorContext(ctx, "OrderService.ConfirmReceipt internal error",
+			"log_type", "error",
+			"error_code", "ORDER_CONFIRM_RECEIPT_FAILED",
+			"error_message", err.Error(),
+			"user_id", uid,
+			slog.Any("request", map[string]any{"order_number": orderNumber}),
+		)
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	slog.InfoContext(ctx, "Order receipt confirmed",
+		"log_type", "business",
+		"event", "order_receipt_confirmed",
+		"entity_type", "order",
+		"entity_id", orderNumber,
+		"actor_id", uid,
+	)
+
+	context.JSON(http.StatusOK, gin.H{
+		"order_number": orderNumber,
+		"status":       "completed",
 	})
 }
 

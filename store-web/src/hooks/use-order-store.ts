@@ -72,6 +72,7 @@ type OrderStoreType = {
   getProductListInCart: () => void
   setPoint: (point: number) => void
   setIsUsePoint: (isUsePoint: boolean) => void
+  setBurnPoint: (points: number) => void
   setPaymentMethod: (paymentMethod: string) => void
   setPaymentInformation: (
     paymentCreditInformation: PaymentCreditInformationType
@@ -172,9 +173,28 @@ const useOrderStore = create<OrderStoreType>()(
       )
     },
     setIsUsePoint: (isUsePoint: boolean) => {
+      const subTotal = get().summary.total_price_thb
+      const availablePoint = get().point.point
+      const maxRedeemable = priceCalculate.pointBurn(availablePoint, subTotal)
+
       set(
         produce((state) => {
           state.point.isUsePoint = isUsePoint
+          state.point.burnPoint = isUsePoint ? maxRedeemable : 0
+        })
+      )
+
+      get().updateSummary()
+    },
+    setBurnPoint: (points: number) => {
+      const subTotal = get().summary.total_price_thb
+      const availablePoint = get().point.point
+      const maxRedeemable = priceCalculate.pointBurn(availablePoint, subTotal)
+      const clampedPoints = Math.min(Math.max(points, 0), maxRedeemable)
+
+      set(
+        produce((state) => {
+          state.point.burnPoint = clampedPoints
         })
       )
 
@@ -218,15 +238,13 @@ const useOrderStore = create<OrderStoreType>()(
     },
     updateSummary: async () => {
       const isUsePoint = get().point.isUsePoint
-      const point = get().point.point
+      const burnPoint = get().point.burnPoint
 
       const subTotal = get().summary.total_price_thb
       const shippingFee = get().shipping.shippingFee
 
-      // priceCalculate Point
-      const pointsUsed = isUsePoint
-        ? priceCalculate.pointBurn(point, subTotal)
-        : 0
+      // burnPoint is already clamped by setIsUsePoint / setBurnPoint
+      const pointsUsed = isUsePoint ? burnPoint : 0
 
       // Total Payment
       const totalPayment = priceCalculate.totalPayment(
@@ -245,7 +263,6 @@ const useOrderStore = create<OrderStoreType>()(
         produce((state) => {
           state.totalPayment = totalPayment
           state.receivePoint = receivePoint
-          state.point.burnPoint = pointsUsed
         })
       )
     }

@@ -6,6 +6,13 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export enum PointStatus {
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
+  APPROVED = 'APPROVED',
+  REDEEMED = 'REDEEMED',
+  EXPIRED = 'EXPIRED',
+}
+
 @Entity('points')
 export class Point {
   @PrimaryGeneratedColumn()
@@ -17,8 +24,24 @@ export class Point {
   @Column({ name: 'user_id' })
   userId: number;
 
+  @Column({ name: 'order_id', nullable: true })
+  orderId: number;
+
   @Column()
   amount: number;
+
+  @Column({
+    type: 'enum',
+    enum: PointStatus,
+    default: PointStatus.PENDING_APPROVAL,
+  })
+  status: PointStatus;
+
+  @Column({ name: 'approved_at', type: 'datetime', nullable: true })
+  approvedAt: Date | null;
+
+  @Column({ name: 'expiry_date', type: 'date', nullable: true })
+  expiryDate: Date | null;
 
   @CreateDateColumn()
   created: Date;

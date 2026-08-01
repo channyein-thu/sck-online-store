@@ -91,6 +91,17 @@ type OrderDetailWithTrackingNumber struct {
 	Updated          time.Time `json:"updated" db:"updated"`
 }
 
+type OrderHistoryItem struct {
+	OrderNumber    int64     `json:"order_number" db:"order_number"`
+	Status         string    `json:"status" db:"status"`
+	SubTotalPrice  float64   `json:"sub_total_price" db:"sub_total_price"`
+	TotalPrice     float64   `json:"total_price" db:"total_price"`
+	BurnPoint      int       `json:"burn_point" db:"burn_point"`
+	EarnPoint      int       `json:"earn_point" db:"earn_point"`
+	TrackingNumber string    `json:"tracking_no" db:"tracking_no"`
+	Updated        time.Time `json:"updated" db:"updated"`
+}
+
 type OrderSummary struct {
 	OrderNumber      int64                 `json:"order_number"`
 	FirstName        string                `json:"first_name"`

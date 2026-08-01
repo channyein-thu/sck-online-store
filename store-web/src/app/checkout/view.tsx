@@ -8,6 +8,7 @@ import Button from '@/components/button/button'
 import useOrderStore from '@/hooks/use-order-store'
 import orderCheckoutService from '@/services/order-checkout'
 import { useEffect } from 'react'
+import Discount from './components/discount'
 import ShippingInformation from './components/shipping-information'
 
 // ----------------------------------------------------------------------
@@ -42,7 +43,7 @@ const CheckoutView = () => {
       cart: cartList,
       burn_point: point.burnPoint,
       sub_total_price: summary.total_price_thb,
-      discount_price: 0,
+      discount_price: Math.floor(point.burnPoint / 2),
       total_price: totalPayment,
       shipping_method_id: shipping.shippingMethod,
       shipping_address: shipping.shippingInformation.address,
@@ -88,7 +89,7 @@ const CheckoutView = () => {
                 <PaymentMethod />
               </div>
               <div className="px-3 md:w-5/12">
-                {/* <Discount /> */}
+                <Discount />
                 <OrderSummary />
                 <Button
                   id="payment-now-btn"

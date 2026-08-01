@@ -22,9 +22,11 @@ import (
 
 type OrderInterface interface {
 	CreateOrder(ctx context.Context, uid int, submitedOrder SubmitedOrder) (Order, error)
-	OrderBurnPoint(ctx context.Context, uid int, burn int) (point.TotalPoint, error)
+	OrderBurnPoint(ctx context.Context, uid int, orderID int, burn int) error
 	GetOrderSummary(ctx context.Context, orderNumber int64) (OrderSummary, error)
 	GeneratePDFFromData(orderDetail OrderSummary) ([]byte, error)
+	ListOrders(ctx context.Context, uid int) ([]OrderHistoryItem, error)
+	ConfirmReceipt(ctx context.Context, uid int, orderNumber int64) error
 }
 
 type OrderService struct {
@@ -41,9 +43,6 @@ type OrderService struct {
 
 type CartRepository interface {
 	DeleteCart(userID int, productID int)
-}
-type PointService interface {
-	DeductPoint(uid int, submitedPoint point.SubmitedPoint) (point.TotalPoint, error)
 }
 
 type ProductRepository interface {
@@ -66,6 +65,7 @@ var ShippingMethod = map[int]string{
 }
 
 var ErrOrderNotFound = errors.New("Order not found")
+var ErrOrderNotOwned = errors.New("Order does not belong to this user")
 
 func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submitedOrder SubmitedOrder) (Order, error) {
 	_, err := orderService.PointService.CheckBurnPoint(ctx, uid, -(submitedOrder.BurnPoint))
@@ -84,7 +84,13 @@ func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submi
 	}
 
 	subtotalPriceTHB := common.ConvertToThb(subtotalPrice).LongDecimal
-	discountPriceTHB := common.ConvertToThb(submitedOrder.DiscountPrice).LongDecimal
+	discountPriceTHB := submitedOrder.DiscountPrice
+	if discountPriceTHB < 0 {
+		discountPriceTHB = 0
+	}
+	if discountPriceTHB > subtotalPriceTHB {
+		discountPriceTHB = subtotalPriceTHB
+	}
 	totalPriceTHB := subtotalPriceTHB - discountPriceTHB
 
 	shippingDetail, _ := orderService.ShippingRepository.GetShippingMethodByID(ctx, submitedOrder.ShippingMethodID)
@@ -158,7 +164,13 @@ func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submi
 	}
 
 	if submitedOrder.BurnPoint > 0 {
-		orderService.OrderBurnPoint(ctx, uid, submitedOrder.BurnPoint)
+		err = orderService.OrderBurnPoint(ctx, uid, orderID, submitedOrder.BurnPoint)
+		if err != nil {
+			slog.ErrorContext(ctx, "OrderService.OrderBurnPoint failed",
+				"log_type", "error", "error_code", "ORDER_BURN_POINT_FAILED", "error_message", err.Error(),
+				"user_id", uid, "order_number", orderNumber, "burn_point", submitedOrder.BurnPoint)
+			return Order{}, err
+		}
 	}
 
 	if metrics.OrdersCreated != nil {
@@ -202,16 +214,9 @@ func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submi
 	}, nil
 }
 
-func (orderService OrderService) OrderBurnPoint(ctx context.Context, uid int, burn int) (point.TotalPoint, error) {
-	submit := point.SubmitedPoint{
-		Amount: -(burn),
-	}
-
-	totalPoint, err := orderService.PointService.DeductPoint(ctx, uid, submit)
-	if err != nil {
-		return point.TotalPoint{}, err
-	}
-	return totalPoint, nil
+func (orderService OrderService) OrderBurnPoint(ctx context.Context, uid int, orderID int, burn int) error {
+	orgID := 1
+	return orderService.PointService.RedeemPoint(ctx, uid, orgID, orderID, burn)
 }
 
 func (orderService OrderService) GetOrderSummary(ctx context.Context, orderNumber int64) (OrderSummary, error) {
@@ -294,6 +299,61 @@ func (orderService OrderService) GetOrderSummary(ctx context.Context, orderNumbe
 	}
 
 	return orderSummary, nil
+}
+
+func (orderService OrderService) ListOrders(ctx context.Context, uid int) ([]OrderHistoryItem, error) {
+	return orderService.OrderRepository.ListOrdersByUserID(ctx, uid)
+}
+
+func (orderService OrderService) ConfirmReceipt(ctx context.Context, uid int, orderNumber int64) error {
+	orderDetail, err := orderService.OrderRepository.GetOrderByOrderNumber(ctx, orderNumber)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.ErrorContext(ctx, "Order not found",
+				"log_type", "error", "error_code", "ORDER_NOT_FOUND", "error_message", err.Error(),
+				"user_id", uid, "order_number", orderNumber)
+			return ErrOrderNotFound
+		}
+		slog.ErrorContext(ctx, "OrderRepository.GetOrderByOrderNumber failed",
+			"log_type", "error", "error_code", "ORDER_QUERY_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	if orderDetail.UserID != uid {
+		slog.ErrorContext(ctx, "Order does not belong to this user",
+			"log_type", "error", "error_code", "ORDER_NOT_OWNED", "error_message", ErrOrderNotOwned.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return ErrOrderNotOwned
+	}
+
+	orgID := 1
+	err = orderService.PointService.ApproveEarnPoint(ctx, uid, orgID, orderDetail.ID)
+	if err != nil {
+		slog.ErrorContext(ctx, "PointService.ApproveEarnPoint failed",
+			"log_type", "error", "error_code", "POINT_APPROVE_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	err = orderService.OrderRepository.UpdateOrderStatus(ctx, orderDetail.ID, "completed")
+	if err != nil {
+		slog.ErrorContext(ctx, "OrderRepository.UpdateOrderStatus failed",
+			"log_type", "error", "error_code", "ORDER_STATUS_UPDATE_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	slog.InfoContext(ctx, "Order receipt confirmed",
+		"log_type", "state_change",
+		"entity_type", "order",
+		"entity_id", orderNumber,
+		"changed_by", uid,
+		slog.Any("after", map[string]any{"status": "completed"}),
+		slog.Any("changed_fields", []string{"status"}),
+	)
+
+	return nil
 }
 
 func (orderService OrderService) GeneratePDFFromData(orderSummary OrderSummary) ([]byte, error) {

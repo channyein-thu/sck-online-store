@@ -37,33 +37,33 @@ describe('Utils > total price > Total Price', () => {
     expect(total).to.equal(actual)
   })
 
-  it('ต้องการเห็น เงินทั้งหมด 450 บาท จากราคารวมสินค้าทั้งหมด 500 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 100 แต้ม', () => {
+  it('ต้องการเห็น เงินทั้งหมด 500 บาท จากราคารวมสินค้าทั้งหมด 500 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 100 แต้ม (ลด 50 บาท)', () => {
     const isUsePoint = true
     const pointsUsed = 100
     const subTotal = 500
     const shippingFee = 50
-    const actual = 450
+    const actual = 500
 
     const total = totalPayment(isUsePoint, pointsUsed, subTotal, shippingFee)
 
     expect(total).to.equal(actual)
   })
 
-  it('ต้องการเห็น เงินทั้งหมด 50 บาท จากราคารวมสินค้าทั้งหมด 100 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 100 แต้ม', () => {
+  it('ต้องการเห็น เงินทั้งหมด 100 บาท จากราคารวมสินค้าทั้งหมด 100 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 100 แต้ม (ลด 50 บาท)', () => {
     const isUsePoint = true
     const pointsUsed = 100
     const subTotal = 100
     const shippingFee = 50
-    const actual = 50
+    const actual = 100
 
     const total = totalPayment(isUsePoint, pointsUsed, subTotal, shippingFee)
 
     expect(total).to.equal(actual)
   })
 
-  it('ต้องการเห็น เงินทั้งหมด 50 บาท จากราคารวมสินค้าทั้งหมด 100 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 150 แต้ม', () => {
+  it('ต้องการเห็น เงินทั้งหมด 50 บาท จากราคารวมสินค้าทั้งหมด 100 บาท และค่าขนส่ง 50 บาท โดยใช้ส่วนลดจากแต้ม 200 แต้ม (ลดเต็มจำนวน)', () => {
     const isUsePoint = true
-    const pointsUsed = 150
+    const pointsUsed = 200
     const subTotal = 100
     const shippingFee = 50
     const actual = 50
@@ -99,6 +99,16 @@ describe('Utils > total price > Point Burn', () => {
     const point = 50
     const subTotal = 100
     const actual = 50
+
+    const pointUsed = pointBurn(point, subTotal)
+
+    expect(pointUsed).to.equal(actual)
+  })
+
+  it('ต้องการเห็น แต้มที่ใช้ถูกจำกัดที่ 200 แต้ม จากราคารวมสินค้าทั้งหมด 100 บาท โดยมีแต้มทั้งหมด 250 แต้ม (2 แต้ม = 1 บาท)', () => {
+    const point = 250
+    const subTotal = 100
+    const actual = 200
 
     const pointUsed = pointBurn(point, subTotal)
 

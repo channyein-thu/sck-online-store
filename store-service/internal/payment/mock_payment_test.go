@@ -4,6 +4,7 @@ import (
 	"context"
 	"store-service/internal/order"
 	"store-service/internal/payment"
+	"store-service/internal/point"
 	"store-service/internal/product"
 	"store-service/internal/shipping"
 
@@ -87,6 +88,16 @@ func (repo *mockOrderRepository) UpdateOrderTrackingNumber(ctx context.Context, 
 	return argument.Error(0)
 }
 
+func (repo *mockOrderRepository) ListOrdersByUserID(ctx context.Context, userID int) ([]order.OrderHistoryItem, error) {
+	argument := repo.Called(ctx, userID)
+	return argument.Get(0).([]order.OrderHistoryItem), argument.Error(1)
+}
+
+func (repo *mockOrderRepository) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
+	argument := repo.Called(ctx, orderID, status)
+	return argument.Error(0)
+}
+
 type mockProductRepository struct {
 	mock.Mock
 }
@@ -103,5 +114,34 @@ func (repository *mockProductRepository) GetProductByID(ctx context.Context, id 
 
 func (repository *mockProductRepository) UpdateStock(ctx context.Context, productId int, quantity int) error {
 	argument := repository.Called(ctx, productId, quantity)
+	return argument.Error(0)
+}
+
+type mockPointService struct {
+	mock.Mock
+}
+
+func (service *mockPointService) TotalPoint(ctx context.Context, uid int) (point.TotalPoint, error) {
+	argument := service.Called(ctx, uid)
+	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+}
+
+func (service *mockPointService) RedeemPoint(ctx context.Context, uid int, orgID int, orderID int, points int) error {
+	argument := service.Called(ctx, uid, orgID, orderID, points)
+	return argument.Error(0)
+}
+
+func (service *mockPointService) CheckBurnPoint(ctx context.Context, uid int, amount int) (bool, error) {
+	argument := service.Called(ctx, uid, amount)
+	return argument.Bool(0), argument.Error(1)
+}
+
+func (service *mockPointService) EarnPoint(ctx context.Context, uid int, orgID int, orderID int, amountThb float64) error {
+	argument := service.Called(ctx, uid, orgID, orderID, amountThb)
+	return argument.Error(0)
+}
+
+func (service *mockPointService) ApproveEarnPoint(ctx context.Context, uid int, orgID int, orderID int) error {
+	argument := service.Called(ctx, uid, orgID, orderID)
 	return argument.Error(0)
 }
