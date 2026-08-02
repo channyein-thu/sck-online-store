@@ -10,6 +10,7 @@ describe('PointController', () => {
   const mockPointService = {
     getPoint: jest.fn(),
     deductPoint: jest.fn(),
+    calculatePoint: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -78,6 +79,18 @@ describe('PointController', () => {
     // assert
     expect(result).toEqual(points);
     expect(mockPointService.getPoint).toBeCalled();
+  });
+
+  it('Calculate => should pass priceThb as a number to PointService.calculatePoint', () => {
+    // arrange
+    jest.spyOn(mockPointService, 'calculatePoint').mockReturnValue({ point: 12 });
+
+    // act
+    const result = controller.calculatePoint(647.5);
+
+    // assert
+    expect(mockPointService.calculatePoint).toBeCalledWith(647.5);
+    expect(result).toEqual({ point: 12 });
   });
 
 });

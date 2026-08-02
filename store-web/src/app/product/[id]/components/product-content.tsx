@@ -8,7 +8,6 @@ import useOrderStore from '@/hooks/use-order-store'
 import addToCartService from '@/services/cart/add-to-cart'
 import { ProductDetailType } from '@/services/product-detail'
 import { converNumber, convertCurrency, isNumber } from '@/utils/format'
-import { receiptPoint } from '@/utils/point'
 import { useState } from 'react'
 
 // ----------------------------------------------------------------------
@@ -85,7 +84,7 @@ const ProductContent = (product: ProductDetailType) => {
         size="md"
         className="text-sm font-medium tracking-tight text-gray-400"
       >
-        {`${converNumber(receiptPoint(product.product_price_thb))} Points`}
+        {`${converNumber(product.product_point)} Points`}
       </Text>
 
       <form className="mt-6">

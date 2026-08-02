@@ -12,8 +12,13 @@ type ProductInterface interface {
 	GetProductByID(ctx context.Context, ID int) (ProductDetail, error)
 }
 
+type PointGateway interface {
+	CalculatePoint(ctx context.Context, priceThb float64) (int, error)
+}
+
 type ProductService struct {
 	ProductRepository ProductRepository
+	PointGateway      PointGateway
 }
 
 func (productService ProductService) GetProducts(ctx context.Context, keyword string, limit string, offset string) (ProductResult, error) {
@@ -40,6 +45,7 @@ func (productService ProductService) GetProductByID(ctx context.Context, ID int)
 	}
 
 	productDetail, err := productService.ProductRepository.GetProductByID(ctx, ID)
+	
 	if err != nil {
 		slog.ErrorContext(ctx, "ProductRepository.GetProductByID internal error", "error", err)
 		return ProductDetail{}, err
@@ -51,5 +57,12 @@ func (productService ProductService) GetProductByID(ctx context.Context, ID int)
 	p.PriceTHB = digit.ShortDecimal
 	p.PriceFullTHB = digit.LongDecimal
 
-	return productDetail, err
+	point, pointErr := productService.PointGateway.CalculatePoint(ctx, p.PriceTHB)
+	if pointErr != nil {
+		slog.ErrorContext(ctx, "PointGateway.CalculatePoint internal error", "error", pointErr)
+	} else {
+		p.Point = point
+	}
+
+	return productDetail, nil
 }

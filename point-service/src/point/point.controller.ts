@@ -38,6 +38,23 @@ export class PointController {
     }
   }
 
+  @Post('calculate')
+  calculatePoint(@Body('priceThb') priceThb: number) {
+    this.logger.log(`POST /point/calculate request received: priceThb=${priceThb}`);
+    otelLogger.emit({
+      severityNumber: SeverityNumber.INFO,
+      severityText: 'INFO',
+      body: 'Calculate point request received',
+      attributes: {
+        'log_type': 'business',
+        'event': 'calculate_point_request',
+        'entity_type': 'point',
+        'price_thb': priceThb,
+      },
+    });
+    return this.pointService.calculatePoint(Number(priceThb));
+  }
+
   @Post()
   async createPoint(@Body() body: CreatePointDto) {
     this.logger.log(

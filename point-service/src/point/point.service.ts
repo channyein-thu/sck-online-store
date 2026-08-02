@@ -44,6 +44,25 @@ export class PointService {
     }
   }
 
+  calculatePoint(priceThb: number): { point: number } {
+    // 50 THB = 1 point, hardcoded for now — configurable rate is a later step
+    const point = Math.floor(priceThb / 50);
+    this.logger.log(`Point calculated: priceThb=${priceThb}, point=${point}`);
+    otelLogger.emit({
+      severityNumber: SeverityNumber.INFO,
+      severityText: 'INFO',
+      body: 'Point calculated',
+      attributes: {
+        'log_type': 'business',
+        'event': 'point_calculated',
+        'entity_type': 'point',
+        'price_thb': priceThb,
+        'point': point,
+      },
+    });
+    return { point };
+  }
+
   async deductPoint(point: CreatePointDto): Promise<Point> {
     try {
       const saved = await this.pointRepository.save(point);

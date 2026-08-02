@@ -25,3 +25,12 @@ func (repository *mockProductRepository) UpdateStock(ctx context.Context, produc
 	argument := repository.Called(ctx, productID, stock)
 	return argument.Error(0)
 }
+
+type mockPointGateway struct {
+	mock.Mock
+}
+
+func (gateway *mockPointGateway) CalculatePoint(ctx context.Context, priceThb float64) (int, error) {
+	argument := gateway.Called(ctx, priceThb)
+	return argument.Int(0), argument.Error(1)
+}

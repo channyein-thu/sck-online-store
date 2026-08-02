@@ -77,6 +77,7 @@ func Test_GetProductByID_Should_be_Return_ProductDetail_ID_1_include_PriceTHB(t 
 		Name:         "Balance Training Bicycle",
 		Price:        119.95,
 		PriceTHB:     4314.6,
+		Point:        86,
 		PriceFullTHB: 4314.597182,
 		Image:        "/Balance_Training_Bicycle.png",
 		Stock:        100,
@@ -96,8 +97,12 @@ func Test_GetProductByID_Should_be_Return_ProductDetail_ID_1_include_PriceTHB(t 
 		Brand:        "SportsFun",
 	}, nil)
 
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 4314.6).Return(86, nil)
+
 	productService := product.ProductService{
 		ProductRepository: mockProductRepository,
+		PointGateway:      mockPointGateway,
 	}
 	actual, err := productService.GetProductByID(context.Background(), pid)
 
@@ -119,4 +124,43 @@ func Test_GetProductByID_Should_be_Return_GetProductByID_Error(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 	assert.NotNil(t, err)
+}
+
+func Test_GetProductByID_Should_be_Return_Point_Zero_When_PointGateway_Fails(t *testing.T) {
+	expected := product.ProductDetail{
+		ID:           1,
+		Name:         "Balance Training Bicycle",
+		Price:        119.95,
+		PriceTHB:     4314.6,
+		Point:        0,
+		PriceFullTHB: 4314.597182,
+		Image:        "/Balance_Training_Bicycle.png",
+		Stock:        100,
+		Brand:        "SportsFun",
+	}
+	pid := 1
+
+	mockProductRepository := new(mockProductRepository)
+	mockProductRepository.On("GetProductByID", mock.Anything, pid).Return(product.ProductDetail{
+		ID:           1,
+		Name:         "Balance Training Bicycle",
+		Price:        119.95,
+		PriceTHB:     0,
+		PriceFullTHB: 0,
+		Image:        "/Balance_Training_Bicycle.png",
+		Stock:        100,
+		Brand:        "SportsFun",
+	}, nil)
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 4314.6).Return(0, errors.New("point-service unavailable"))
+
+	productService := product.ProductService{
+		ProductRepository: mockProductRepository,
+		PointGateway:      mockPointGateway,
+	}
+	actual, err := productService.GetProductByID(context.Background(), pid)
+
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
 }

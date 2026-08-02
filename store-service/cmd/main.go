@@ -163,6 +163,7 @@ func main() {
 	}
 	productService := product.ProductService{
 		ProductRepository: &productRepository,
+		PointGateway:      &pointGateway,
 	}
 	orderService := order.OrderService{
 		CartRepository:     cartRepository,

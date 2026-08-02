@@ -8,6 +8,7 @@ export type ProductDetailType = {
   product_name: string
   product_price: number
   product_price_thb: number
+  product_point: number
   product_price_full_thb: number
   product_image: string
   stock: number

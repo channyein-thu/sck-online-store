@@ -81,4 +81,14 @@ describe('PointService', () => {
     expect(mockPointRepository.find).toBeCalled();
   });
 
+  describe('calculatePoint', () => {
+    it('Should floor priceThb/50 into whole points', () => {
+      expect(service.calculatePoint(647.5)).toEqual({ point: 12 });
+    });
+
+    it('Should return 0 points when priceThb is below the rate', () => {
+      expect(service.calculatePoint(49)).toEqual({ point: 0 });
+    });
+  });
+
 });

@@ -19,6 +19,7 @@ type ProductDetail struct {
 	Name         string  `json:"product_name" db:"product_name"`
 	Price        float64 `json:"product_price" db:"product_price"`
 	PriceTHB     float64 `json:"product_price_thb"`
+	Point        int     `json:"product_point" db:"product_point"`
 	PriceFullTHB float64 `json:"product_price_full_thb"`
 	Image        string  `json:"product_image" db:"image_url"`
 	Stock        int     `json:"stock" db:"stock"`
