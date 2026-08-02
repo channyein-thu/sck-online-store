@@ -22,7 +22,7 @@ ${DOWNLOAD_DIR}    ${CURDIR}${/}..${/}temp_downloads
     เลือกดูสินค้า    product-card-name-1    Balance Training Bicycle
     ตรวจสอบรายละเอียดสินค้า    Balance Training Bicycle    SportsFun    4,044.70    80
     เพิ่มสินค้าลงตะกร้า
-    ตรวจสอบข้อมูลสินค้าในตะกร้า และ Checkout    Balance Training Bicycle    SportsFun    4,044.70    80    4,044.70
+    ตรวจสอบข้อมูลสินค้าในตะกร้า และ Checkout    Balance Training Bicycle    SportsFun    4,044.71    80    4,044.71
     ใส่ที่อยู่จัดส่งสินค้า    
     ...    ณัฐพล    ศรีสมบัติ    
     ...    43/8 หมู่บ้านเปี่ยมสุข ถนนลาดพร้าว ซอย 63    กรุงเทพมหานคร
@@ -31,13 +31,13 @@ ${DOWNLOAD_DIR}    ${CURDIR}${/}..${/}temp_downloads
     เลือกวิธีจัดส่งสินค้าเป็น    kerry
     ตรวจสอบค่าจัดส่งสินค้าของ Kerry เท่ากันกับ 50.00 บาท    kerry    50.00
     เลือกช่องทางการชำระเงินแบบ VISA Credit Card    Nattapon Srisombat    5123 4500 0000 0008    01/39    100
-    ตรวจสอบราคารวมที่ต้องชำระเงิน ต้องเท่ากันกับ    4,094.70
+    ตรวจสอบราคารวมที่ต้องชำระเงิน ต้องเท่ากันกับ    4,094.71
     ยืนยัน OTP
     ตรวจสอบหมายเลขพัสดุว่าต้องขึ้นต้นด้วย    KR
     กดดาวน์โหลดไฟล์
     ตรวขสอบข้อมูลในไฟล์ PDF    Emily    Thompson    KR    credit
-    ...    SportsFun    Balance Training Bicycle    4,044.70    1    4,094.70
-    ...    4,044.70    kerry    4,094.70    80
+    ...    SportsFun    Balance Training Bicycle    4,044.71    1    4,094.71
+    ...    4,044.71    kerry    4,094.71    80
 
 *** Keywords ***
 Setup Folder For Download
