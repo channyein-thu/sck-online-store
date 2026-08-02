@@ -4,6 +4,7 @@ import (
 	"context"
 	"store-service/internal/order"
 	"store-service/internal/payment"
+	"store-service/internal/point"
 	"store-service/internal/product"
 	"store-service/internal/shipping"
 
@@ -87,6 +88,16 @@ func (repo *mockOrderRepository) UpdateOrderTrackingNumber(ctx context.Context, 
 	return argument.Error(0)
 }
 
+func (repo *mockOrderRepository) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
+	argument := repo.Called(ctx, orderID, status)
+	return argument.Error(0)
+}
+
+func (repo *mockOrderRepository) ListOrdersByUserID(ctx context.Context, userID int) ([]order.OrderHistoryItem, error) {
+	argument := repo.Called(ctx, userID)
+	return argument.Get(0).([]order.OrderHistoryItem), argument.Error(1)
+}
+
 type mockProductRepository struct {
 	mock.Mock
 }
@@ -104,4 +115,38 @@ func (repository *mockProductRepository) GetProductByID(ctx context.Context, id 
 func (repository *mockProductRepository) UpdateStock(ctx context.Context, productId int, quantity int) error {
 	argument := repository.Called(ctx, productId, quantity)
 	return argument.Error(0)
+}
+
+type mockPointInterface struct {
+	mock.Mock
+}
+
+func (service *mockPointInterface) TotalPoint(ctx context.Context, uid int) (point.TotalPoint, error) {
+	argument := service.Called(ctx, uid)
+	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+}
+
+func (service *mockPointInterface) DeductPoint(ctx context.Context, uid int, submitedPoint point.SubmitedPoint) (point.TotalPoint, error) {
+	argument := service.Called(ctx, uid, submitedPoint)
+	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+}
+
+func (service *mockPointInterface) CheckBurnPoint(ctx context.Context, uid int, amount int) (bool, error) {
+	argument := service.Called(ctx, uid, amount)
+	return argument.Bool(0), argument.Error(1)
+}
+
+func (service *mockPointInterface) CalculatePoint(ctx context.Context, priceThb float64) (point.TotalPoint, error) {
+	argument := service.Called(ctx, priceThb)
+	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+}
+
+func (service *mockPointInterface) ApproveEarnPoint(ctx context.Context, uid int, orgID int, orderID int) error {
+	argument := service.Called(ctx, uid, orgID, orderID)
+	return argument.Error(0)
+}
+
+func (service *mockPointInterface) GetBalance(ctx context.Context, uid int) ([]point.BalanceItem, error) {
+	argument := service.Called(ctx, uid)
+	return argument.Get(0).([]point.BalanceItem), argument.Error(1)
 }

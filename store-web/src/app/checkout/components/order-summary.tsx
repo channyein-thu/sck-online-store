@@ -25,7 +25,7 @@ const OrderSummary = () => {
           text="Receive Points"
           format="number"
           className="font-semibold"
-          unit="Points"
+          unit={receivePoint > 0 ? 'Points' : 'Point'}
           value={receivePoint}
         />
         <SummaryText

@@ -25,3 +25,13 @@ func (gateway *mockPointGateway) CalculatePoint(ctx context.Context, priceThb fl
 	argument := gateway.Called(ctx, priceThb)
 	return argument.Int(0), argument.Error(1)
 }
+
+func (gateway *mockPointGateway) ApproveEarnPoint(ctx context.Context, body point.ApproveEarnPointRequest) error {
+	argument := gateway.Called(ctx, body)
+	return argument.Error(0)
+}
+
+func (gateway *mockPointGateway) GetBalance(ctx context.Context, orgID int, uid int) ([]point.BalanceItem, error) {
+	argument := gateway.Called(ctx, orgID, uid)
+	return argument.Get(0).([]point.BalanceItem), argument.Error(1)
+}

@@ -40,6 +40,33 @@ func (gateway PointGateway) GetPoints(ctx context.Context, uid int) ([]Point, er
 	return PointGatewayResponse, nil
 }
 
+func (gateway PointGateway) GetBalance(ctx context.Context, orgID int, uid int) ([]BalanceItem, error) {
+	endPoint := fmt.Sprintf("%s/api/v1/point/balance?orgId=%d&userId=%d", gateway.PointEndpoint, orgID, uid)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endPoint, nil)
+	if err != nil {
+		return []BalanceItem{}, err
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return []BalanceItem{}, err
+	}
+	if response.StatusCode != 200 {
+		return []BalanceItem{}, fmt.Errorf("response is not ok but it's %d", response.StatusCode)
+	}
+	responseData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return []BalanceItem{}, err
+	}
+
+	var result []BalanceItem
+	err = json.Unmarshal(responseData, &result)
+	if err != nil {
+		return []BalanceItem{}, err
+	}
+
+	return result, nil
+}
+
 func (gateway PointGateway) CalculatePoint(ctx context.Context, priceThb float64) (int, error) {
 	endPoint := fmt.Sprintf("%s/api/v1/point/calculate?priceThb=%f", gateway.PointEndpoint, priceThb)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endPoint, nil)
@@ -65,6 +92,27 @@ func (gateway PointGateway) CalculatePoint(ctx context.Context, priceThb float64
 	}
 
 	return result.Point, nil
+}
+
+func (gateway PointGateway) ApproveEarnPoint(ctx context.Context, body ApproveEarnPointRequest) error {
+	data, _ := json.Marshal(body)
+	endPoint := gateway.PointEndpoint + "/api/v1/point/approve"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endPoint, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode == http.StatusNotFound {
+		return ErrNoPendingPoints
+	}
+	if response.StatusCode != 200 && response.StatusCode != 201 {
+		return fmt.Errorf("response is not ok but it's %d", response.StatusCode)
+	}
+	return nil
 }
 
 func (gateway PointGateway) CreatePoint(ctx context.Context, uid int, body Point) (Point, error) {

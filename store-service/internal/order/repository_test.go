@@ -94,6 +94,34 @@ func Test_OrderRepository(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	})
 
+	t.Run("UpdateOrderStatus_Input_Status_Completed_OrderID_1_Should_No_Error", func(t *testing.T) {
+		oid := 1
+		status := "completed"
+
+		err := repository.UpdateOrderStatus(context.Background(), oid, status)
+
+		assert.Equal(t, nil, err)
+	})
+
+	t.Run("UpdateOrderStatus_Input_Status_Completed_OrderID_11111111119_Should_Get_Error_No_Row_Affected", func(t *testing.T) {
+		expectedError := fmt.Errorf("no any row affected , update not completed")
+		orderID := 11111111119
+		status := "completed"
+
+		err := repository.UpdateOrderStatus(context.Background(), orderID, status)
+
+		assert.Equal(t, expectedError, err)
+	})
+
+	t.Run("ListOrdersByUserID_Input_UserID_1_Should_Be_Orders_No_Error", func(t *testing.T) {
+		uid := 1
+
+		actual, err := repository.ListOrdersByUserID(context.Background(), uid)
+
+		assert.Equal(t, nil, err)
+		assert.NotEmpty(t, actual)
+	})
+
 	t.Run("GetOrderProduct_Input_OrderID_2_Should_Be_OrderProducts", func(t *testing.T) {
 		expected := []order.OrderProduct{
 			{

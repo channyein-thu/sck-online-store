@@ -149,14 +149,15 @@ func main() {
 	PDFHelper := order.OrderSummaryPDFGenerator{}
 	orderHelper := order.OrderHelper{}
 
+	pointService := point.PointService{
+		PointGateway: &pointGateway,
+	}
 	paymentService := payment.PaymentService{
 		BankGateway:       &bankGateway,
 		ShippingGateway:   &shippingGateway,
 		OrderRepository:   &orderRepository,
 		ProductRepository: productRepository,
-	}
-	pointService := point.PointService{
-		PointGateway: &pointGateway,
+		PointService:      pointService,
 	}
 	cartService := cart.CartService{
 		CartRepository: &cartRepository,
@@ -249,12 +250,15 @@ func main() {
 	protected.PUT("/updateCart", cartAPI.UpdateCartHandler)
 
 	protected.POST("/order", orderAPI.SubmitOrderHandler)
+	protected.GET("/order/history", orderAPI.GetOrderHistoryHandler)
 	protected.POST("/order/:id/summary", orderAPI.GetOrderSummaryHandler)
+	protected.POST("/order/:id/confirmReceipt", orderAPI.ConfirmReceiptHandler)
 	protected.POST("/confirmPayment", paymentAPI.ConfirmPaymentHandler)
 
 	protected.GET("/point", pointAPI.TotalPointHandler)
 	protected.POST("/point", pointAPI.DeductPointHandler)
 	protected.GET("/point/calculate", pointAPI.CalculatePointHandler)
+	protected.GET("/point/:userid", pointAPI.GetPointByUserIDHandler)
 
 	//docs.SwaggerInfo.BasePath = "/api/v1"
 	route.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

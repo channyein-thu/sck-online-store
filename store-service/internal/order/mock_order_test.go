@@ -37,6 +37,16 @@ func (service *mockPointInterface) CalculatePoint(ctx context.Context, priceThb 
 	return argument.Get(0).(point.TotalPoint), argument.Error(1)
 }
 
+func (service *mockPointInterface) ApproveEarnPoint(ctx context.Context, uid int, orgID int, orderID int) error {
+	argument := service.Called(ctx, uid, orgID, orderID)
+	return argument.Error(0)
+}
+
+func (service *mockPointInterface) GetBalance(ctx context.Context, uid int) ([]point.BalanceItem, error) {
+	argument := service.Called(ctx, uid)
+	return argument.Get(0).([]point.BalanceItem), argument.Error(1)
+}
+
 type mockPointGateway struct {
 	mock.Mock
 }
@@ -102,6 +112,16 @@ func (repo *mockOrderRepository) CreateShipping(ctx context.Context, userID int,
 func (repo *mockOrderRepository) UpdateOrderTransaction(ctx context.Context, orderID int, transactionID string) error {
 	argument := repo.Called(ctx, orderID, transactionID)
 	return argument.Error(1)
+}
+
+func (repo *mockOrderRepository) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
+	argument := repo.Called(ctx, orderID, status)
+	return argument.Error(0)
+}
+
+func (repo *mockOrderRepository) ListOrdersByUserID(ctx context.Context, userID int) ([]order.OrderHistoryItem, error) {
+	argument := repo.Called(ctx, userID)
+	return argument.Get(0).([]order.OrderHistoryItem), argument.Error(1)
 }
 
 func (repo *mockOrderRepository) UpdateOrderTrackingNumber(ctx context.Context, orderID int, trackingNumber string) error {

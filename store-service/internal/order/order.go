@@ -25,6 +25,8 @@ type OrderInterface interface {
 	OrderBurnPoint(ctx context.Context, uid int, burn int) (point.TotalPoint, error)
 	GetOrderSummary(ctx context.Context, orderNumber int64) (OrderSummary, error)
 	GeneratePDFFromData(orderDetail OrderSummary) ([]byte, error)
+	ConfirmReceipt(ctx context.Context, uid int, orderNumber int64) error
+	ListOrders(ctx context.Context, uid int) ([]OrderHistoryItem, error)
 }
 
 type OrderService struct {
@@ -71,6 +73,7 @@ var ShippingMethod = map[int]string{
 }
 
 var ErrOrderNotFound = errors.New("Order not found")
+var ErrOrderNotOwned = errors.New("Order does not belong to this user")
 
 func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submitedOrder SubmitedOrder) (Order, error) {
 	_, err := orderService.PointService.CheckBurnPoint(ctx, uid, -(submitedOrder.BurnPoint))
@@ -223,6 +226,62 @@ func (orderService OrderService) OrderBurnPoint(ctx context.Context, uid int, bu
 		return point.TotalPoint{}, err
 	}
 	return totalPoint, nil
+}
+
+func (orderService OrderService) ConfirmReceipt(ctx context.Context, uid int, orderNumber int64) error {
+	orderDetail, err := orderService.OrderRepository.GetOrderByOrderNumber(ctx, orderNumber)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			slog.ErrorContext(ctx, "Order not found",
+				"log_type", "error", "error_code", "ORDER_NOT_FOUND", "error_message", err.Error(),
+				"user_id", uid, "order_number", orderNumber)
+			return ErrOrderNotFound
+		}
+		slog.ErrorContext(ctx, "OrderRepository.GetOrderByOrderNumber failed",
+			"log_type", "error", "error_code", "ORDER_QUERY_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	if orderDetail.UserID != uid {
+		slog.ErrorContext(ctx, "Order does not belong to this user",
+			"log_type", "error", "error_code", "ORDER_NOT_OWNED", "error_message", ErrOrderNotOwned.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return ErrOrderNotOwned
+	}
+
+	orgID := 1
+	err = orderService.PointService.ApproveEarnPoint(ctx, uid, orgID, orderDetail.ID)
+	if err != nil {
+		slog.ErrorContext(ctx, "PointService.ApproveEarnPoint failed",
+			"log_type", "error", "error_code", "POINT_APPROVE_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	err = orderService.OrderRepository.UpdateOrderStatus(ctx, orderDetail.ID, "completed")
+	if err != nil {
+		slog.ErrorContext(ctx, "OrderRepository.UpdateOrderStatus failed",
+			"log_type", "error", "error_code", "ORDER_STATUS_UPDATE_FAILED", "error_message", err.Error(),
+			"user_id", uid, "order_number", orderNumber)
+		return err
+	}
+
+	slog.InfoContext(ctx, "Order receipt confirmed",
+		"log_type", "business",
+		"event", "order_receipt_confirmed",
+		"entity_type", "order",
+		"entity_id", orderNumber,
+		"actor_id", uid,
+		slog.Any("after", map[string]any{"status": "completed"}),
+		slog.Any("changed_fields", []string{"status"}),
+	)
+
+	return nil
+}
+
+func (orderService OrderService) ListOrders(ctx context.Context, uid int) ([]OrderHistoryItem, error) {
+	return orderService.OrderRepository.ListOrdersByUserID(ctx, uid)
 }
 
 func (orderService OrderService) GetOrderSummary(ctx context.Context, orderNumber int64) (OrderSummary, error) {

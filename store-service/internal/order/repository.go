@@ -15,9 +15,11 @@ type OrderRepository interface {
 	CreateOrderProduct(ctx context.Context, orderID, productID, quantity int, productPrice float64) error
 	UpdateOrderTransaction(ctx context.Context, orderID int, transactionID string) error
 	UpdateOrderTrackingNumber(ctx context.Context, orderID int, trackingNumber string) error
+	UpdateOrderStatus(ctx context.Context, orderID int, status string) error
 	GetOrderProduct(ctx context.Context, orderID int) ([]OrderProduct, error)
 	GetOrderProductWithPrice(ctx context.Context, orderID int) ([]OrderProductWithPrice, error)
 	CreateShipping(ctx context.Context, userID int, orderID int, shippingInfo ShippingInfo) (int, error)
+	ListOrdersByUserID(ctx context.Context, userID int) ([]OrderHistoryItem, error)
 }
 
 type OrderRepositoryMySQL struct {
@@ -113,6 +115,27 @@ func (orderRepository OrderRepositoryMySQL) UpdateOrderTrackingNumber(ctx contex
 		return fmt.Errorf("no any row affected , update not completed")
 	}
 	return err
+}
+
+func (orderRepository OrderRepositoryMySQL) UpdateOrderStatus(ctx context.Context, orderID int, status string) error {
+	sqlResult, err := orderRepository.DBConnection.ExecContext(ctx, "UPDATE orders SET status=? WHERE id = ?", status, orderID)
+	if err != nil {
+		return err
+	}
+	rowAffected, err := sqlResult.RowsAffected()
+	if rowAffected == 0 {
+		return fmt.Errorf("no any row affected , update not completed")
+	}
+	return err
+}
+
+func (orderRepository OrderRepositoryMySQL) ListOrdersByUserID(ctx context.Context, userID int) ([]OrderHistoryItem, error) {
+	var orders []OrderHistoryItem
+	err := orderRepository.DBConnection.SelectContext(ctx, &orders, `
+		SELECT order_number, status, sub_total_price, total_price, burn_point, earn_point, tracking_no, updated
+		FROM orders WHERE user_id = ? ORDER BY created DESC
+	`, userID)
+	return orders, err
 }
 
 func (repository OrderRepositoryMySQL) GetOrderProduct(ctx context.Context, orderID int) ([]OrderProduct, error) {

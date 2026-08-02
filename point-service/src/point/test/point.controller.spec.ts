@@ -1,8 +1,9 @@
 
+import { HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreatePointDto } from '../point.dto';
+import { ApprovePointDto, CreatePointDto } from '../point.dto';
 import { PointController } from '../point.controller';
-import { PointService } from '../point.service';
+import { PointNotFoundError, PointService } from '../point.service';
 
 describe('PointController', () => {
   let controller: PointController;
@@ -11,6 +12,8 @@ describe('PointController', () => {
     getPoint: jest.fn(),
     deductPoint: jest.fn(),
     calculatePoint: jest.fn(),
+    approvePoint: jest.fn(),
+    getBalance: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -36,6 +39,7 @@ describe('PointController', () => {
     const createPointInput = {
       orgId: 1,
       userId: 1,
+      orderId: 10,
       amount: 200,
     } as CreatePointDto;
 
@@ -43,6 +47,7 @@ describe('PointController', () => {
       id: 1,
       orgId: 1,
       userId: 1,
+      orderId: 10,
       amount: 200,
       created: '2024-08-25T09:06:58',
       updated: '2024-08-25T09:06:58',
@@ -91,6 +96,64 @@ describe('PointController', () => {
     // assert
     expect(mockPointService.calculatePoint).toBeCalledWith(647.5);
     expect(result).toEqual({ point: 12 });
+  });
+
+  describe('approvePoint', () => {
+    const approvePointInput = {
+      orgId: 1,
+      userId: 1,
+      orderId: 10,
+    } as ApprovePointDto;
+
+    it('Should call PointService.approvePoint and return its result', async () => {
+      // arrange
+      const approvePointResponse = {
+        id: 1,
+        orgId: 1,
+        userId: 1,
+        orderId: 10,
+        amount: 200,
+        status: 'APPROVED',
+        approvedAt: '2026-01-01T00:00:00.000Z',
+        expiryDate: '2026-06-29',
+        created: '2024-08-25T09:06:58',
+        updated: '2024-08-25T09:06:58',
+      };
+
+      jest.spyOn(mockPointService, 'approvePoint').mockResolvedValue(approvePointResponse);
+
+      // act
+      const result = await controller.approvePoint(approvePointInput);
+
+      // assert
+      expect(mockPointService.approvePoint).toBeCalledWith(approvePointInput);
+      expect(result).toEqual(approvePointResponse);
+    });
+
+    it('Should map PointNotFoundError to a 404 HttpException with a NOT_FOUND code', async () => {
+      // arrange
+      const notFoundError = new PointNotFoundError('No point record found for orgId=1, userId=1, orderId=10');
+      jest.spyOn(mockPointService, 'approvePoint').mockRejectedValue(notFoundError);
+
+      // act & assert
+      await expect(controller.approvePoint(approvePointInput)).rejects.toMatchObject({
+        status: HttpStatus.NOT_FOUND,
+        response: {
+          code: 'NOT_FOUND',
+          message: notFoundError.message,
+        },
+      });
+    });
+
+    it('Should map an unexpected error to a 500 HttpException', async () => {
+      // arrange
+      jest.spyOn(mockPointService, 'approvePoint').mockRejectedValue(new Error('DB is down'));
+
+      // act & assert
+      await expect(controller.approvePoint(approvePointInput)).rejects.toMatchObject({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
+    });
   });
 
 });

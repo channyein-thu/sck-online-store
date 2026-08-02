@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"store-service/internal/metrics"
 	"store-service/internal/order"
+	"store-service/internal/point"
 	"store-service/internal/product"
 	"store-service/internal/shipping"
 	"time"
@@ -23,6 +24,7 @@ type PaymentService struct {
 	ShippingGateway   ShippingGatewayInterface
 	OrderRepository   order.OrderRepository
 	ProductRepository product.ProductRepository
+	PointService      point.PointInterface
 }
 
 type BankGatewayInterface interface {
@@ -133,6 +135,25 @@ func (service PaymentService) ConfirmPayment(ctx context.Context, uid int, submi
 		slog.Any("after", map[string]any{"transaction_id": transactionId, "status": "paid"}),
 		slog.Any("changed_fields", []string{"transaction_id", "status"}),
 	)
+
+	if orderDetail.EarnPoint > 0 {
+		_, err = service.PointService.DeductPoint(ctx, uid, point.SubmitedPoint{Amount: orderDetail.EarnPoint, OrderID: orderDetail.ID})
+		if err != nil {
+			slog.ErrorContext(ctx, "PointService.DeductPoint failed",
+				"log_type", "error", "error_code", "POINT_EARN_FAILED", "error_message", err.Error(),
+				"user_id", uid, "order_number", orderNumber, "amount", orderDetail.EarnPoint)
+			return SubmitedPaymentResponse{}, err
+		}
+
+		slog.InfoContext(ctx, "Points awarded",
+			"log_type", "state_change",
+			"entity_type", "point",
+			"entity_id", uid,
+			"changed_by", uid,
+			slog.Any("after", map[string]any{"earned_point": orderDetail.EarnPoint}),
+			slog.Any("changed_fields", []string{"amount"}),
+		)
+	}
 
 	shippingGatewaySubmit := shipping.ShippingGatewaySubmit{
 		ShippingMethodID: orderDetail.ShippingMethodID,

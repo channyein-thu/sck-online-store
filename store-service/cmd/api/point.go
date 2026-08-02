@@ -39,10 +39,7 @@ func (api PointAPI) DeductPointHandler(context *gin.Context) {
 		return
 	}
 
-	uid, uidErr := strconv.Atoi(context.GetHeader("uid"))
-	if uidErr != nil {
-		uid = 1
-	}
+	uid := context.GetInt("userID")
 
 	res, err := api.PointService.DeductPoint(ctx, uid, request)
 	if err != nil {
@@ -74,23 +71,59 @@ func (api PointAPI) DeductPointHandler(context *gin.Context) {
 	context.JSON(http.StatusOK, res)
 }
 
-// @Summary Get total points
-// @Description Get user's total point balance
+// @Summary Get point balance by status
+// @Description Get user's point balance broken down by status (PENDING_APPROVAL, APPROVED, REDEEMED, EXPIRED)
 // @Tags point
 // @Accept json
 // @Produce json
-// @Success 200 {object} point.Point
+// @Success 200 {array} point.BalanceItem
 // @Failure 500
 // @Router /api/v1/point [get]
 func (api PointAPI) TotalPointHandler(context *gin.Context) {
-	uid, uidErr := strconv.Atoi(context.GetHeader("uid"))
-	if uidErr != nil {
-		uid = 1
-	}
+	uid := context.GetInt("userID")
 
 	ctx := context.Request.Context()
-	res, err := api.PointService.TotalPoint(ctx, uid)
+	res, err := api.PointService.GetBalance(ctx, uid)
 
+	if err != nil {
+		slog.ErrorContext(ctx, "PointService.GetBalance failed",
+			"log_type", "error",
+			"error_code", "POINT_QUERY_FAILED",
+			"error_message", err.Error(),
+			"user_id", uid,
+		)
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	context.JSON(http.StatusOK, res)
+}
+
+// @Summary Get total points for a specific user
+// @Description Get a user's total point balance by user ID
+// @Tags point
+// @Produce json
+// @Param userid path int true "User ID"
+// @Success 200 {object} point.TotalPoint
+// @Failure 400 {string} string "Bad request error"
+// @Failure 500
+// @Router /api/v1/point/{userid} [get]
+func (api PointAPI) GetPointByUserIDHandler(context *gin.Context) {
+	ctx := context.Request.Context()
+
+	uid, err := strconv.Atoi(context.Param("userid"))
+	if err != nil {
+		slog.ErrorContext(ctx, "Get point by user ID bad request",
+			"log_type", "error",
+			"error_code", "INVALID_REQUEST",
+			"error_message", err.Error(),
+		)
+		context.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := api.PointService.TotalPoint(ctx, uid)
 	if err != nil {
 		slog.ErrorContext(ctx, "PointService.TotalPoint failed",
 			"log_type", "error",

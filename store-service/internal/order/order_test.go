@@ -2,6 +2,7 @@ package order_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"store-service/internal/auth"
@@ -658,6 +659,179 @@ func Test_GetOrderSummary_Should_Return_One_Product_If_OrderNumber_is_2601069522
 	actual, err := orderService.GetOrderSummary(context.Background(), orderNumber)
 	assert.Equal(t, expected, actual)
 	assert.Nil(t, err)
+}
+
+func Test_ConfirmReceipt_Input_OrderNumber_Not_Found_Should_Return_ErrOrderNotFound(t *testing.T) {
+	uid := 1
+	var orderNumber int64 = 2601069522001099
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{}, sql.ErrNoRows)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+	}
+
+	err := orderService.ConfirmReceipt(context.Background(), uid, orderNumber)
+
+	assert.Equal(t, order.ErrOrderNotFound, err)
+}
+
+func Test_ConfirmReceipt_Input_OrderNumber_Owned_By_Another_User_Should_Return_ErrOrderNotOwned(t *testing.T) {
+	uid := 1
+	otherUserID := 2
+	oid := 8004359103
+	var orderNumber int64 = 2601069522001098
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{
+		ID:     oid,
+		UserID: otherUserID,
+	}, nil)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+	}
+
+	err := orderService.ConfirmReceipt(context.Background(), uid, orderNumber)
+
+	assert.Equal(t, order.ErrOrderNotOwned, err)
+}
+
+func Test_ConfirmReceipt_Input_Valid_Order_Should_Approve_Point_No_Error(t *testing.T) {
+	uid := 1
+	orgID := 1
+	oid := 8004359103
+	var orderNumber int64 = 2601069522001097
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{
+		ID:     oid,
+		UserID: uid,
+	}, nil)
+
+	mockOrderRepository.On("UpdateOrderStatus", mock.Anything, oid, "completed").Return(nil)
+
+	mockPointInterface := new(mockPointInterface)
+	mockPointInterface.On("ApproveEarnPoint", mock.Anything, uid, orgID, oid).Return(nil)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+		PointService:    mockPointInterface,
+	}
+
+	err := orderService.ConfirmReceipt(context.Background(), uid, orderNumber)
+
+	assert.Nil(t, err)
+	mockOrderRepository.AssertCalled(t, "UpdateOrderStatus", mock.Anything, oid, "completed")
+}
+
+func Test_ConfirmReceipt_Input_UpdateOrderStatus_Error_Should_Return_Error(t *testing.T) {
+	uid := 1
+	orgID := 1
+	oid := 8004359103
+	var orderNumber int64 = 2601069522001094
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{
+		ID:     oid,
+		UserID: uid,
+	}, nil)
+	mockOrderRepository.On("UpdateOrderStatus", mock.Anything, oid, "completed").Return(errors.New("UpdateOrderStatus Error"))
+
+	mockPointInterface := new(mockPointInterface)
+	mockPointInterface.On("ApproveEarnPoint", mock.Anything, uid, orgID, oid).Return(nil)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+		PointService:    mockPointInterface,
+	}
+
+	err := orderService.ConfirmReceipt(context.Background(), uid, orderNumber)
+
+	assert.NotNil(t, err)
+}
+
+func Test_ListOrders_Input_UserID_4_Should_Return_Orders_Newest_First(t *testing.T) {
+	userID := 4
+	updatedTime := time.Date(2026, 2, 28, 18, 58, 44, 0, time.UTC)
+
+	expected := []order.OrderHistoryItem{
+		{
+			OrderNumber:    2601069522002002,
+			Status:         "paid",
+			SubTotalPrice:  5246.22,
+			TotalPrice:     5256.22,
+			BurnPoint:      0,
+			EarnPoint:      52,
+			TrackingNumber: "KR-304590466",
+			Updated:        updatedTime,
+		},
+		{
+			OrderNumber:    2601069522001001,
+			Status:         "created",
+			SubTotalPrice:  4314.6,
+			TotalPrice:     4364.6,
+			BurnPoint:      0,
+			EarnPoint:      43,
+			TrackingNumber: "",
+			Updated:        updatedTime,
+		},
+	}
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("ListOrdersByUserID", mock.Anything, userID).Return(expected, nil)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+	}
+
+	actual, err := orderService.ListOrders(context.Background(), userID)
+
+	assert.Equal(t, expected, actual)
+	assert.Nil(t, err)
+}
+
+func Test_ListOrders_Input_UserID_4_Should_Return_Repository_Error(t *testing.T) {
+	userID := 4
+	expected := []order.OrderHistoryItem(nil)
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("ListOrdersByUserID", mock.Anything, userID).Return(expected, errors.New("ListOrdersByUserID Error"))
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+	}
+
+	actual, err := orderService.ListOrders(context.Background(), userID)
+
+	assert.Equal(t, expected, actual)
+	assert.NotNil(t, err)
+}
+
+func Test_ConfirmReceipt_Input_PointService_ErrNoPendingPoints_Should_Return_Error(t *testing.T) {
+	uid := 1
+	orgID := 1
+	oid := 8004359103
+	var orderNumber int64 = 2601069522001095
+
+	mockOrderRepository := new(mockOrderRepository)
+	mockOrderRepository.On("GetOrderByOrderNumber", mock.Anything, orderNumber).Return(order.OrderDetail{
+		ID:     oid,
+		UserID: uid,
+	}, nil)
+
+	mockPointInterface := new(mockPointInterface)
+	mockPointInterface.On("ApproveEarnPoint", mock.Anything, uid, orgID, oid).Return(point.ErrNoPendingPoints)
+
+	orderService := order.OrderService{
+		OrderRepository: mockOrderRepository,
+		PointService:    mockPointInterface,
+	}
+
+	err := orderService.ConfirmReceipt(context.Background(), uid, orderNumber)
+
+	assert.Equal(t, point.ErrNoPendingPoints, err)
 }
 
 func Test_GetOrderSummary_Should_Return_Two_Products_If_OrderOrderNumber_is_2601069522002002(t *testing.T) {

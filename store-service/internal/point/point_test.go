@@ -129,6 +129,109 @@ func Test_CalculatePoint_Should_be_Return_Error_When_PointGateway_Fails(t *testi
 	assert.NotNil(t, err)
 }
 
+func Test_ApproveEarnPoint_Input_OrderID_10_Should_Call_Gateway_No_Error(t *testing.T) {
+	uid := 1
+	orgID := 1
+	orderID := 10
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("ApproveEarnPoint", mock.Anything, point.ApproveEarnPointRequest{
+		OrgID:   orgID,
+		UserID:  uid,
+		OrderID: orderID,
+	}).Return(nil)
+
+	pointService := point.PointService{
+		PointGateway: mockPointGateway,
+	}
+	err := pointService.ApproveEarnPoint(context.Background(), uid, orgID, orderID)
+
+	assert.Equal(t, nil, err)
+}
+
+func Test_ApproveEarnPoint_Input_Gateway_ErrNoPendingPoints_Should_Return_ErrNoPendingPoints(t *testing.T) {
+	uid := 1
+	orgID := 1
+	orderID := 10
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("ApproveEarnPoint", mock.Anything, point.ApproveEarnPointRequest{
+		OrgID:   orgID,
+		UserID:  uid,
+		OrderID: orderID,
+	}).Return(point.ErrNoPendingPoints)
+
+	pointService := point.PointService{
+		PointGateway: mockPointGateway,
+	}
+	err := pointService.ApproveEarnPoint(context.Background(), uid, orgID, orderID)
+
+	assert.ErrorIs(t, err, point.ErrNoPendingPoints)
+}
+
+func Test_ApproveEarnPoint_Input_Gateway_Error_Should_Return_Error(t *testing.T) {
+	uid := 1
+	orgID := 1
+	orderID := 10
+	expected := fmt.Errorf("response is not ok but it's 500")
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("ApproveEarnPoint", mock.Anything, point.ApproveEarnPointRequest{
+		OrgID:   orgID,
+		UserID:  uid,
+		OrderID: orderID,
+	}).Return(expected)
+
+	pointService := point.PointService{
+		PointGateway: mockPointGateway,
+	}
+	err := pointService.ApproveEarnPoint(context.Background(), uid, orgID, orderID)
+
+	assert.Equal(t, expected, err)
+}
+
+func Test_GetBalance_Should_Return_BalanceItems_By_Status(t *testing.T) {
+	expected := []point.BalanceItem{
+		{Status: "PENDING_APPROVAL", Point: 20},
+		{Status: "APPROVED", Point: 88},
+		{Status: "REDEEMED", Point: 10},
+		{Status: "EXPIRED", Point: 5},
+	}
+	uid := 1
+	balance := []point.BalanceItem{
+		{Status: "PENDING_APPROVAL", Point: 20},
+		{Status: "APPROVED", Point: 88},
+		{Status: "REDEEMED", Point: 10},
+		{Status: "EXPIRED", Point: 5},
+	}
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("GetBalance", mock.Anything, 1, uid).Return(balance, nil)
+
+	pointService := point.PointService{
+		PointGateway: mockPointGateway,
+	}
+	actual, err := pointService.GetBalance(context.Background(), uid)
+
+	assert.Equal(t, expected, actual)
+	assert.Equal(t, nil, err)
+}
+
+func Test_GetBalance_Should_Return_Error_When_PointGateway_Fails(t *testing.T) {
+	uid := 1
+
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("GetBalance", mock.Anything, 1, uid).Return([]point.BalanceItem{}, fmt.Errorf("point-service unavailable"))
+
+	pointService := point.PointService{
+		PointGateway: mockPointGateway,
+	}
+	actual, err := pointService.GetBalance(context.Background(), uid)
+
+	assert.Nil(t, actual)
+	assert.NotNil(t, err)
+}
+
 func Test_TotalPoint_Point_100_and_Minus_50_Should_be_Point_50(t *testing.T) {
 	expected := point.TotalPoint{
 		Point: 50,
