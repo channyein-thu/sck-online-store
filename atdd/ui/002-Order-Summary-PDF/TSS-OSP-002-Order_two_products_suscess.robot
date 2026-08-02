@@ -19,7 +19,7 @@ ${DOWNLOAD_DIR}    ${CURDIR}${/}..${/}temp_downloads
     เข้าสู่เว็บไซต์ และตรวจสอบว่า redirect มาที่    /auth/login    login-page
     เข้าสู่ระบบ    login-username-input    user_3    login-password-input    P@ssw0rd
     เลือกดูสินค้า    product-card-name-1    Balance Training Bicycle
-    ตรวจสอบรายละเอียดสินค้า    Balance Training Bicycle    SportsFun    4,044.70    80
+    ตรวจสอบรายละเอียดสินค้า    Balance Training Bicycle    SportsFun    4,044.71    80
     เพิ่มสินค้าลงตะกร้าและมีสินค้าจำนวน    1
     กลับไปที่หน้า homepage
     เลือกดูสินค้า    product-card-name-2    43 Piece dinner Set

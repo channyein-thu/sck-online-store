@@ -20,7 +20,7 @@ ${DOWNLOAD_DIR}    ${CURDIR}${/}..${/}temp_downloads
     เข้าสู่เว็บไซต์ และตรวจสอบว่า redirect มาที่    /auth/login    login-page
     เข้าสู่ระบบ    login-username-input    user_2    login-password-input    P@ssw0rd
     เลือกดูสินค้า    product-card-name-1    Balance Training Bicycle
-    ตรวจสอบรายละเอียดสินค้า    Balance Training Bicycle    SportsFun    4,044.70    80
+    ตรวจสอบรายละเอียดสินค้า    Balance Training Bicycle    SportsFun    4,044.71    80
     เพิ่มสินค้าลงตะกร้า
     ตรวจสอบข้อมูลสินค้าในตะกร้า และ Checkout    Balance Training Bicycle    SportsFun    4,044.71    80    4,044.71
     ใส่ที่อยู่จัดส่งสินค้า    
