@@ -73,7 +73,13 @@ export class PointService {
   ): Promise<{ status: string; point: number }[]> {
     try {
       const points = await this.pointRepository.find({ where: { orgId, userId } });
-      const today = new Date();
+      // TypeORM hydrates `type: 'date'` columns as 'YYYY-MM-DD' strings despite the
+      // `Date` TS type on the entity, so expiryDate must be normalized before comparison
+      // (comparing a raw string against a Date coerces the Date to a number and the
+      // string to NaN, making every relational comparison silently false).
+      const toDateOnly = (d: Date | string): string =>
+        d instanceof Date ? d.toISOString().slice(0, 10) : d.slice(0, 10);
+      const today = toDateOnly(new Date());
 
       const pendingApproval = points
         .filter((p) => p.status === PointStatus.PENDING_APPROVAL)
@@ -82,7 +88,8 @@ export class PointService {
       const approved = points
         .filter(
           (p) =>
-            p.status === PointStatus.APPROVED && (!p.expiryDate || p.expiryDate >= today),
+            p.status === PointStatus.APPROVED &&
+            (!p.expiryDate || toDateOnly(p.expiryDate) >= today),
         )
         .reduce((sum, p) => sum + p.amount, 0);
 
@@ -94,7 +101,8 @@ export class PointService {
 
       const expired = points
         .filter(
-          (p) => p.status === PointStatus.APPROVED && p.expiryDate && p.expiryDate < today,
+          (p) =>
+            p.status === PointStatus.APPROVED && p.expiryDate && toDateOnly(p.expiryDate) < today,
         )
         .reduce((sum, p) => sum + p.amount, 0);
 

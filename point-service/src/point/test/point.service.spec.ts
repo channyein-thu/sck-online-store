@@ -130,6 +130,24 @@ describe('PointService', () => {
       ]);
     });
 
+    it('Should count a future expiryDate as approved even when TypeORM hydrates it as a YYYY-MM-DD string (not a Date)', async () => {
+      // arrange — mysql2/TypeORM actually returns `date`-typed columns as strings at
+      // runtime despite the `Date` TS type on the entity; this guards against comparing
+      // that string directly against a real Date object (which silently evaluates false).
+      const points = [
+        { id: 1, orgId: 1, userId: 1, amount: 80, status: PointStatus.APPROVED, expiryDate: '2099-01-28' },
+      ] as unknown as Point[];
+
+      jest.spyOn(mockPointRepository, 'find').mockResolvedValue(points);
+
+      // act
+      const result = await service.getBalance(1, 1);
+
+      // assert
+      expect(result).toContainEqual({ status: PointStatus.APPROVED, point: 80 });
+      expect(result).toContainEqual({ status: PointStatus.EXPIRED, point: 0 });
+    });
+
     it('Should return all zeros when there are no points for the user', async () => {
       // arrange
       jest.spyOn(mockPointRepository, 'find').mockResolvedValue([]);
