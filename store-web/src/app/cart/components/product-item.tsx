@@ -8,7 +8,6 @@ import useOrderStore from '@/hooks/use-order-store'
 import { ProductDetailInCart } from '@/services/cart/get-product-list'
 import updateProductInCartService from '@/services/cart/update-product'
 import { converNumber, convertCurrency, isNumber } from '@/utils/format'
-import { receiptPoint } from '@/utils/point'
 import { useEffect, useState } from 'react'
 
 // ----------------------------------------------------------------------
@@ -127,14 +126,14 @@ const ProductItem = ({
               <p id={`product-${product_id}-price`} className="ml-4">
                 {convertCurrency(product_price_thb * quantity, 'THB')}
               </p>
-              <p
+              {/* <p
                 id={`product-${product_id}-point`}
                 className="ml-4 text-sm text-gray-600"
               >
                 {`${converNumber(
                   receiptPoint(product_price_thb * quantity)
                 )} Points`}
-              </p>
+              </p> */}
             </div>
           </div>
           <Text

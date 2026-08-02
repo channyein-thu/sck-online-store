@@ -1,0 +1,22 @@
+erDiagram
+    ORGANIZATIONS ||--o{ POINTS : owns
+
+    ORGANIZATIONS {
+        bigint id PK
+        varchar name
+        timestamp created
+        timestamp updated
+    }
+
+    POINTS {
+        bigint id PK
+        bigint org_id FK
+        int user_id "logical ref: store.users.id (no DB-level FK, separate service)"
+        int order_id "logical ref: store.orders.id, nullable"
+        int amount "positive = earn/approved, negative = redeemed"
+        enum status "PENDING_APPROVAL, APPROVED, REDEEMED"
+        datetime approved_at "nullable, set when approved"
+        date expiry_date "nullable, approved_at + 179 days"
+        timestamp created
+        timestamp updated
+    }

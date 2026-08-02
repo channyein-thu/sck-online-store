@@ -105,3 +105,37 @@ func (api PointAPI) TotalPointHandler(context *gin.Context) {
 	}
 	context.JSON(http.StatusOK, res)
 }
+
+// @Summary Calculate points earned for a THB price
+// @Description Calculate how many points would be earned for a given THB amount
+// @Tags point
+// @Produce json
+// @Param priceThb query number true "Price in THB"
+// @Success 200 {object} point.TotalPoint
+// @Failure 400 {string} string "Bad request error"
+// @Failure 500
+// @Router /api/v1/point/calculate [get]
+func (api PointAPI) CalculatePointHandler(context *gin.Context) {
+	ctx := context.Request.Context()
+
+	priceThb, err := strconv.ParseFloat(context.Query("priceThb"), 64)
+	if err != nil {
+		slog.ErrorContext(ctx, "Point calculate bad request",
+			"log_type", "error",
+			"error_code", "INVALID_REQUEST",
+			"error_message", err.Error(),
+		)
+		context.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	res, err := api.PointService.CalculatePoint(ctx, priceThb)
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	context.JSON(http.StatusOK, res)
+}

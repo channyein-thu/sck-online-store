@@ -1,0 +1,108 @@
+erDiagram
+    USERS ||--o{ CARTS : has
+    USERS ||--o{ ORDERS : places
+    USERS ||--o{ ORDER_SHIPPING : "ships to"
+    PRODUCTS ||--o{ CARTS : "in"
+    PRODUCTS ||--o{ ORDER_PRODUCT : "in"
+    SHIPPING_METHODS ||--o{ ORDERS : "used by"
+    SHIPPING_METHODS ||--o{ ORDER_SHIPPING : "used by"
+    PAYMENT_METHODS ||--o{ ORDERS : "used by"
+    ORDERS ||--o{ ORDER_PRODUCT : contains
+    ORDERS ||--|| ORDER_SHIPPING : has
+
+    USERS {
+        bigint id PK
+        varchar first_name
+        varchar last_name
+        varchar username UK "login credential"
+        varchar password "bcrypt hash"
+        timestamp created
+        timestamp updated
+    }
+
+    PRODUCTS {
+        bigint id PK
+        varchar product_name
+        varchar product_brand
+        int stock
+        double product_price "stored in USD"
+        varchar image_url
+        timestamp created
+        timestamp updated
+    }
+
+    SHIPPING_METHODS {
+        bigint id PK
+        varchar name
+        varchar description
+        double fee
+        timestamp created
+        timestamp updated
+    }
+
+    PAYMENT_METHODS {
+        bigint id PK
+        varchar name
+        varchar description
+        timestamp created
+        timestamp updated
+    }
+
+    CARTS {
+        bigint id PK
+        bigint user_id FK
+        bigint product_id FK
+        int quantity
+        timestamp created
+        timestamp updated
+    }
+
+    ORDERS {
+        bigint id PK
+        bigint user_id FK
+        bigint shipping_method_id FK
+        bigint payment_method_id FK
+        bigint order_number UK "YYMMDD+userId+seq"
+        double sub_total_price "THB, server-computed"
+        double discount_price "THB, from points redeemed"
+        double total_price "THB, charged amount"
+        int burn_point "points spent on this order"
+        int earn_point "points to be earned, preview only"
+        double shipping_fee "THB"
+        varchar transaction_id "bank gateway ref"
+        enum status "created, paid, completed, cancel"
+        varchar tracking_no
+        timestamp authorized
+        timestamp created
+        timestamp updated
+    }
+
+    ORDER_PRODUCT {
+        bigint order_id FK
+        bigint product_id FK
+        int quantity
+        double product_price "price at time of order"
+    }
+
+    ORDER_SHIPPING {
+        int id PK
+        bigint order_id FK
+        bigint user_id FK
+        bigint method_id FK
+        varchar address
+        varchar sub_district
+        varchar district
+        varchar province
+        varchar zip_code
+        varchar recipient_first_name
+        varchar recipient_last_name
+        varchar phone_number
+        timestamp created
+        timestamp updated
+    }
+
+    ORDER_SEQUENCES {
+        char date_prefix PK "YYMMDD"
+        int user_id PK
+        int current_seq "atomic counter for order_number"
+    }

@@ -113,11 +113,15 @@ func Test_CreateOrder_Input_Submitted_Order_Should_be_OrderNumber_26010695220010
 	mockCartRepository := new(mockCartRepository)
 	mockCartRepository.On("DeleteCart", mock.Anything, uid, submittedOrder.Cart[0].ProductID).Return(nil)
 
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 465.811034).Return(4, nil)
+
 	orderService := order.OrderService{
 		ProductRepository:  mockProductRepository,
 		OrderRepository:    mockOrderRepository,
 		CartRepository:     mockCartRepository,
 		PointService:       mockPointInterface,
+		PointGateway:       mockPointGateway,
 		ShippingRepository: mockShippingRepository,
 		OrderHelper:        mockOrderHelper,
 		Clock:              func() time.Time { return fixedTime },
@@ -285,10 +289,14 @@ func Test_CreateOrder_Input_Submitted_Order_Should_be_Return_Create_Order_Error(
 	}
 	mockOrderRepository.On("CreateOrder", mock.Anything, uid, orderDetail).Return(oid, errors.New("CreateOrder Error"))
 
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 465.811034).Return(4, nil)
+
 	orderService := order.OrderService{
 		ProductRepository:  mockProductRepository,
 		OrderRepository:    mockOrderRepository,
 		PointService:       mockPointInterface,
+		PointGateway:       mockPointGateway,
 		ShippingRepository: mockShippingRepository,
 		OrderHelper:        mockOrderHelper,
 		Clock:              func() time.Time { return fixedTime },
@@ -390,10 +398,14 @@ func Test_CreateOrder_Input_Submitted_Order_Should_be_Return_Create_Shipping_Err
 	}
 	mockOrderRepository.On("CreateShipping", mock.Anything, uid, oid, shippingInfo).Return(1, errors.New("CreateShipping Error"))
 
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 465.811034).Return(4, nil)
+
 	orderService := order.OrderService{
 		ProductRepository:  mockProductRepository,
 		OrderRepository:    mockOrderRepository,
 		PointService:       mockPointInterface,
+		PointGateway:       mockPointGateway,
 		ShippingRepository: mockShippingRepository,
 		OrderHelper:        mockOrderHelper,
 		Clock:              func() time.Time { return fixedTime },
@@ -497,10 +509,14 @@ func Test_CreateOrder_Input_Submitted_Order_Should_be_Return_Create_Order_Produc
 
 	mockOrderRepository.On("CreateOrderProduct", mock.Anything, oid, submittedOrder.Cart[0].ProductID, submittedOrder.Cart[0].Quantity, productPrice).Return(errors.New("CreateOrderProduct Error"))
 
+	mockPointGateway := new(mockPointGateway)
+	mockPointGateway.On("CalculatePoint", mock.Anything, 465.811034).Return(4, nil)
+
 	orderService := order.OrderService{
 		ProductRepository:  mockProductRepository,
 		OrderRepository:    mockOrderRepository,
 		PointService:       mockPointInterface,
+		PointGateway:       mockPointGateway,
 		ShippingRepository: mockShippingRepository,
 		OrderHelper:        mockOrderHelper,
 		Clock:              func() time.Time { return fixedTime },

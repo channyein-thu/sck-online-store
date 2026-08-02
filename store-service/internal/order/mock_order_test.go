@@ -32,6 +32,20 @@ func (service *mockPointInterface) CheckBurnPoint(ctx context.Context, uid int, 
 	return argument.Bool(0), argument.Error(1)
 }
 
+func (service *mockPointInterface) CalculatePoint(ctx context.Context, priceThb float64) (point.TotalPoint, error) {
+	argument := service.Called(ctx, priceThb)
+	return argument.Get(0).(point.TotalPoint), argument.Error(1)
+}
+
+type mockPointGateway struct {
+	mock.Mock
+}
+
+func (gateway *mockPointGateway) CalculatePoint(ctx context.Context, priceThb float64) (int, error) {
+	argument := gateway.Called(ctx, priceThb)
+	return argument.Int(0), argument.Error(1)
+}
+
 type mockOrderHelper struct {
 	mock.Mock
 }

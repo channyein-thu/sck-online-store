@@ -13,8 +13,13 @@ type CartInterface interface {
 	UpdateCart(ctx context.Context, uid int, submitedCart SubmitedCart) (CartResult, error)
 }
 
+type PointGateway interface {
+	CalculatePoint(ctx context.Context, priceThb float64) (int, error)
+}
+
 type CartService struct {
 	CartRepository CartRepository
+	PointGateway   PointGateway
 }
 
 func (cartService CartService) GetCart(ctx context.Context, uid int) (CartResult, error) {
@@ -48,13 +53,20 @@ func (cartService CartService) GetCart(ctx context.Context, uid int) (CartResult
 			Summary: CartSummary{},
 		}, err
 	}
+
+	receivePoint, pointErr := cartService.PointGateway.CalculatePoint(ctx, totalPriceTHB)
+	if pointErr != nil {
+		slog.ErrorContext(ctx, "PointGateway.CalculatePoint internal error",
+			"log_type", "error", "error_code", "POINT_CALCULATE_FAILED", "error_message", pointErr.Error(), "user_id", uid)
+	}
+
 	return CartResult{
 		Carts: carts,
 		Summary: CartSummary{
 			TotalPrice:        totalPrice,
 			TotalPriceTHB:     totalPriceTHB,
 			TotalPriceFullTHB: totalPriceFullTHB,
-			ReceivePoint:      common.CalculatePoint(totalPriceTHB),
+			ReceivePoint:      receivePoint,
 		},
 	}, err
 }

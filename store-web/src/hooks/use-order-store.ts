@@ -2,7 +2,7 @@ import SHIPPING_METHOD from '@/assets/data/shipping_method.json'
 import GetProductInCartService, {
   ProductDetailInCart
 } from '@/services/cart/get-product-list'
-import * as pointCalulate from '@/utils/point'
+import { calculatePointService } from '@/services/point'
 import * as priceCalculate from '@/utils/total-price'
 import type {} from '@redux-devtools/extension' // required for devtools typing
 import { produce } from 'immer'
@@ -239,7 +239,9 @@ const useOrderStore = create<OrderStoreType>()(
       const totalWithOutShipping = totalPayment - shippingFee
 
       // Point Receive
-      const receivePoint = pointCalulate.receiptPoint(totalWithOutShipping)
+      const calculatePointResponse =
+        await calculatePointService(totalWithOutShipping)
+      const receivePoint = calculatePointResponse.data?.point ?? 0
 
       set(
         produce((state) => {

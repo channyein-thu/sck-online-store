@@ -160,6 +160,7 @@ func main() {
 	}
 	cartService := cart.CartService{
 		CartRepository: &cartRepository,
+		PointGateway:   &pointGateway,
 	}
 	productService := product.ProductService{
 		ProductRepository: &productRepository,
@@ -169,6 +170,7 @@ func main() {
 		CartRepository:     cartRepository,
 		OrderRepository:    &orderRepository,
 		PointService:       pointService,
+		PointGateway:       &pointGateway,
 		ProductRepository:  productRepository,
 		ShippingRepository: shippingRepository,
 		UserRepository:     userRepository,
@@ -252,6 +254,7 @@ func main() {
 
 	protected.GET("/point", pointAPI.TotalPointHandler)
 	protected.POST("/point", pointAPI.DeductPointHandler)
+	protected.GET("/point/calculate", pointAPI.CalculatePointHandler)
 
 	//docs.SwaggerInfo.BasePath = "/api/v1"
 	route.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))

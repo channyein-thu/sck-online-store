@@ -21,4 +21,27 @@ const getPointService = async (): Promise<GetPointServiceResponse> => {
   }
 }
 
+export type CalculatePointServiceResponse = {
+  data?: {
+    point: number
+  }
+  message?: string
+}
+
+export const calculatePointService = async (
+  priceThb: number
+): Promise<CalculatePointServiceResponse> => {
+  try {
+    const { data } = await axiosShoppingMallApi.get(
+      `/api/v1/point/calculate`,
+      { params: { priceThb } }
+    )
+    return {
+      data: data
+    }
+  } catch (error) {
+    return handleServiceError(error)
+  }
+}
+
 export default getPointService

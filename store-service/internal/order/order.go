@@ -31,6 +31,7 @@ type OrderService struct {
 	CartRepository     cart.CartRepository
 	OrderRepository    OrderRepository
 	PointService       point.PointInterface
+	PointGateway       PointGateway
 	ProductRepository  product.ProductRepository
 	ShippingRepository shipping.ShippingRepository
 	UserRepository     auth.UserRepository
@@ -44,6 +45,10 @@ type CartRepository interface {
 }
 type PointService interface {
 	DeductPoint(uid int, submitedPoint point.SubmitedPoint) (point.TotalPoint, error)
+}
+
+type PointGateway interface {
+	CalculatePoint(ctx context.Context, priceThb float64) (int, error)
 }
 
 type ProductRepository interface {
@@ -90,6 +95,12 @@ func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submi
 	shippingDetail, _ := orderService.ShippingRepository.GetShippingMethodByID(ctx, submitedOrder.ShippingMethodID)
 	shippingFeeTHB := shippingDetail.Fee
 
+	earnPoint, pointErr := orderService.PointGateway.CalculatePoint(ctx, totalPriceTHB)
+	if pointErr != nil {
+		slog.ErrorContext(ctx, "PointGateway.CalculatePoint internal error",
+			"log_type", "error", "error_code", "POINT_CALCULATE_FAILED", "error_message", pointErr.Error(), "user_id", uid)
+	}
+
 	now := orderService.Clock()
 	datePrefix := now.Format("060102")
 
@@ -116,7 +127,7 @@ func (orderService OrderService) CreateOrder(ctx context.Context, uid int, submi
 		TotalPrice:       totalPriceTHB + shippingFeeTHB,
 		ShippingFee:      shippingFeeTHB,
 		BurnPoint:        submitedOrder.BurnPoint,
-		EarnPoint:        common.CalculatePoint(totalPriceTHB),
+		EarnPoint:        earnPoint,
 	}
 
 	orderID, err := orderService.OrderRepository.CreateOrder(ctx, uid, orderDetail)

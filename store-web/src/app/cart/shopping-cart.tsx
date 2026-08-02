@@ -69,7 +69,10 @@ const ShoppingCartView = ({
                     </div>
 
                     <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
-                      <SubTotal total={summary.total_price_thb} />
+                      <SubTotal
+                        total={summary.total_price_thb}
+                        point={summary.receive_point}
+                      />
 
                       <Text size="sm" className="mt-0.5 text-gray-500">
                         Shipping and taxes calculated at checkout.

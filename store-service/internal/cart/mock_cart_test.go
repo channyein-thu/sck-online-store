@@ -35,3 +35,12 @@ func (repo *mockCartRepository) DeleteCart(ctx context.Context, userID int, prod
 	argument := repo.Called(ctx, userID, productID)
 	return argument.Error(0)
 }
+
+type mockPointGateway struct {
+	mock.Mock
+}
+
+func (gateway *mockPointGateway) CalculatePoint(ctx context.Context, priceThb float64) (int, error) {
+	argument := gateway.Called(ctx, priceThb)
+	return argument.Int(0), argument.Error(1)
+}
