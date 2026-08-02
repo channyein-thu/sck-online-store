@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Logger, Post, Query } from '@nestjs/common';
 import { PointService } from './point.service';
 import { CreatePointDto } from './point.dto';
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
@@ -38,9 +38,9 @@ export class PointController {
     }
   }
 
-  @Post('calculate')
-  calculatePoint(@Body('priceThb') priceThb: number) {
-    this.logger.log(`POST /point/calculate request received: priceThb=${priceThb}`);
+  @Get('calculate')
+  calculatePoint(@Query('priceThb') priceThb: string) {
+    this.logger.log(`GET /point/calculate request received: priceThb=${priceThb}`);
     otelLogger.emit({
       severityNumber: SeverityNumber.INFO,
       severityText: 'INFO',

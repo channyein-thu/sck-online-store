@@ -86,7 +86,7 @@ describe('PointController', () => {
     jest.spyOn(mockPointService, 'calculatePoint').mockReturnValue({ point: 12 });
 
     // act
-    const result = controller.calculatePoint(647.5);
+    const result = controller.calculatePoint('647.5');
 
     // assert
     expect(mockPointService.calculatePoint).toBeCalledWith(647.5);

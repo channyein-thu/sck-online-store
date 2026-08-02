@@ -41,13 +41,11 @@ func (gateway PointGateway) GetPoints(ctx context.Context, uid int) ([]Point, er
 }
 
 func (gateway PointGateway) CalculatePoint(ctx context.Context, priceThb float64) (int, error) {
-	endPoint := gateway.PointEndpoint + "/api/v1/point/calculate"
-	data, _ := json.Marshal(map[string]float64{"priceThb": priceThb})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endPoint, bytes.NewBuffer(data))
+	endPoint := fmt.Sprintf("%s/api/v1/point/calculate?priceThb=%f", gateway.PointEndpoint, priceThb)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endPoint, nil)
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, err
