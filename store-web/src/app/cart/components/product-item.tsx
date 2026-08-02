@@ -21,6 +21,7 @@ const ProductItem = ({
   quantity,
   product_name,
   product_price_thb,
+  product_price_full_thb,
   product_image,
   stock,
   isHiddenLable = false
@@ -124,7 +125,7 @@ const ProductItem = ({
             </h3>
             <div className="flex flex-col items-end">
               <p id={`product-${product_id}-price`} className="ml-4">
-                {convertCurrency(product_price_thb * quantity, 'THB')}
+                {convertCurrency(product_price_full_thb * quantity, 'THB')}
               </p>
               {/* <p
                 id={`product-${product_id}-point`}
